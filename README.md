@@ -17,7 +17,16 @@ Config via env vars — see `.env.example`. Optional council-zone assignment:
 drop a GeoJSON FeatureCollection of maintenance zones at
 `data/council_zones.geojson` (each feature needs a `name` or `zone` property).
 
-## API
+## Design docs
+
+The code here is a FastAPI + SQLite **MVP prototype**. The target design is a
+Node/Express + PostGIS `/backend` and React + Vite + Tailwind `/frontend`
+monorepo — start at [`docs/README.md`](docs/README.md):
+[`spec.md`](docs/spec.md) (target design and build guide),
+[`decisions.md`](docs/decisions.md) (where the spec departs from the brief),
+[`spec-vs-mvp.md`](docs/spec-vs-mvp.md) (gap between this code and the spec).
+
+## API (MVP)
 
 | Endpoint | Auth | Purpose |
 |---|---|---|

@@ -38,6 +38,12 @@ and warns rather than fails when unconfigured. Staff endpoints are gated
 by `STAFF_TOKEN` (header `X-Staff-Token`); reporter endpoints are public
 and strip contact details from responses.
 
+**Target design differs from this MVP.** `docs/spec.md` specifies a Node/Express
++ PostGIS `/backend` and React/Vite/Tailwind `/frontend` monorepo (to be built
+by Windsurf SWE-2). `docs/decisions.md` records every deviation from the
+original brief (`docs/brief.md`); `docs/spec-vs-mvp.md` lists the gaps and open
+decisions. Update these when the design or the code changes.
+
 ## Conventions
 
 <!-- Anything non-obvious from reading the code: naming, error handling
