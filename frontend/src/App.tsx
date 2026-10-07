@@ -1,8 +1,9 @@
-// frontend/src/App.tsx — routes: / report, /map public, /r/:id tracking, /staff.
+// frontend/src/App.tsx — routes: / report, /map public, /r/:id tracking, /reports/:id read-only view, /staff.
 import { Routes, Route } from 'react-router-dom';
 import ReportLeakPage from './pages/ReportLeakPage.js';
 import PublicMapPage from './pages/PublicMapPage.js';
 import ReportStatusPage from './pages/ReportStatusPage.js';
+import PublicReportViewPage from './pages/PublicReportViewPage.js';
 import DashboardPage from './pages/DashboardPage.js';
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
         <Route path="/" element={<ReportLeakPage />} />
         <Route path="/map" element={<PublicMapPage />} />
         <Route path="/r/:id" element={<ReportStatusPage />} />
+        <Route path="/reports/:id" element={<PublicReportViewPage />} />
         <Route path="/staff" element={<DashboardPage />} />
       </Routes>
     </div>

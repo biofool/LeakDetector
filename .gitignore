@@ -88,3 +88,5 @@ data/audit/
 backend/data/uploads/
 *.tsbuildinfo
 logs/
+test-results/
+playwright-report/
