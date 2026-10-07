@@ -1,20 +1,23 @@
-# Components Index
+# Components — biofool/LeakDetector
 
-| Component | File | Risk | Component Doc |
-|-----------|------|------|---------------|
-| AGENTS.md | `AGENTS.md` | High (canonical rules) | `agents-md.md` |
-| CLAUDE.md | `CLAUDE.md` | Medium (mirror) | `claude-md.md` |
-| Devin Skills | `.devin/skills/*/SKILL.md` | Low (self-contained) | `devin-skills.md` |
-| .gitignore | `.gitignore` | Medium (secrets) | `gitignore.md` |
-| Claude settings | `.claude/settings.json` | Low (empty scaffold) | — |
-| README.md | `README.md` | Low (instructions) | — |
-| TechnicalMarketingReadMe.md | `TechnicalMarketingReadMe.md` | Low (marketing) | — |
+| Component | File | What it is |
+|-----------|------|------------|
+| `legacy-mvp` | `legacy-mvp.md` | FastAPI + SQLite + Leaflet MVP in `legacy/` — frozen reference implementation |
+| `backend-build` | `backend-build.md` | Spec'd Node/TS/Express/PostGIS API + worker being built in `backend/` |
+| `docs-design` | `docs-design.md` | The design pack in `docs/` — brief / spec / decisions / spec-vs-mvp |
+| `agents-md` | `agents-md.md` | `AGENTS.md` — canonical biofool global rules |
+| `claude-md` | `claude-md.md` | `CLAUDE.md` — Claude mirror + project-specific section |
+| `devin-skills` | `devin-skills.md` | `.devin/skills/` — bundled agent skills |
+| `gitignore` | `gitignore.md` | `.gitignore` — secrets + runtime-data policy |
+| `security-tooling` | (this file) | `scripts/scan_secrets.py`, `scripts/audit-deps.sh`, `.githooks/pre-commit`, `.github/workflows/{secret-scan,dependency-review,dependency-audit}.yml` — the three-layer gate from the starter template |
 
-## Priority Order
+## Security tooling (detail)
 
-1. **AGENTS.md** — highest traffic, highest risk; canonical rules source
-2. **CLAUDE.md** — must mirror AGENTS.md; desync = agent behavior divergence
-3. **.gitignore** — secrets prevention; removing entries = leak risk
-4. **Devin Skills** — self-contained, low coupling
-5. **README.md / TechnicalMarketingReadMe.md** — documentation only
-6. **.claude/settings.json** — empty scaffold, no risk
+- `.githooks/pre-commit` scans staged files for known secret patterns;
+  install via `git config core.hooksPath .githooks`.
+- `scripts/scan_secrets.py` — full working-tree scan, `--dry-run`, JSON
+  audit to `data/audit/`.
+- `scripts/audit-deps.sh` — shared by `.github/workflows/dependency-audit.yml`
+  (scheduled) and intended as a deploy preflight.
+- `.github/workflows/dependency-review.yml` — PR-time gate
+  (`fail-on-severity: high`).

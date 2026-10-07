@@ -1,12 +1,13 @@
-# Workflows Index
+# Workflows — biofool/LeakDetector
 
-| Workflow | File | Priority |
-|----------|------|----------|
-| Template sync (downstream ← template) | `template-sync.md` | High |
-| Cloud strategy sync | `cloud-strategy-sync.md` | High |
+| Workflow | File | Trigger |
+|----------|------|---------|
+| Spec build | `spec-build.md` | Implementing `docs/spec.md` milestones in `backend/`/`frontend/` |
+| Template sync | `template-sync.md` | biofool/starter global rules change |
+| Cloud-strategy sync | `cloud-strategy-sync.md` | this repo gains real cloud resources (Railway, S3, mail/SMS) |
 
-## Notes
+## Not present
 
-- No runtime workflows exist (zero application code)
-- These are **operational workflows** — how the template is used and maintained
-- The template itself has no CI/CD, no build, no deploy — workflows describe human/agent processes
+- No deploy workflow yet — spec targets Railway (M11); nothing deployed.
+- No CI test workflow — `.github/workflows/` is security gates only
+  (secret-scan, dependency-review, dependency-audit).

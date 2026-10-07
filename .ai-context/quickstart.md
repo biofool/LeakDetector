@@ -1,53 +1,63 @@
-# Quickstart — biofool/starter
+# Quickstart — biofool/LeakDetector
 
 ## System Shape
 
-GitHub template repo. Zero code. Provides shared AI agent config (rules,
-skills, gitignore, settings) that downstream biofool repos inherit on clone.
-Not a deployable system — a configuration distribution mechanism.
+Two coexisting states — read this first:
+
+- **`legacy/`** — working MVP, runnable today. FastAPI (Python) + stdlib
+  `sqlite3` + no-build Leaflet frontend. Citizen leak reports, staff triage,
+  duty-officer email, public map. Frozen for reference.
+- **`backend/`** — target build in progress (untracked): TypeScript +
+  Express + Postgres/PostGIS, worker, migrations, Jest. Being built to
+  `docs/spec.md` §6 milestones.
+- **`docs/spec.md`** — target design. Monorepo: `/backend` Node 20/Express +
+  Postgres 16/PostGIS + a worker process; `/frontend` React + Vite +
+  Tailwind PWA (not started). Railway deploy. Build contract: milestones
+  M1–M11.
+
+Do not extend `legacy/` — it is superseded. Do not assume `frontend/` or
+spec entities exist in code yet.
+
+## Run the MVP
+
+```bash
+cd legacy && pip3 install -r requirements.txt
+STAFF_TOKEN=devtoken uvicorn app.main:app --host 0.0.0.0 --port 8080
+```
+
+(README still shows the pre-move root paths; the MVP now lives in `legacy/`.)
+
+Report form `http://127.0.0.1:8080/` · map `/map.html` · API docs `/docs`.
+
+Tests: `python3 -m pytest legacy/tests/ -q` (7 tests).
 
 ## Major Entry Points
 
-- **`AGENTS.md`** — Devin CLI reads this as native rules; canonical source of 10 global rules + cloud strategy
-- **`CLAUDE.md`** — Claude Code reads this; mirrors global conventions from AGENTS.md
-- **`.devin/skills/*/SKILL.md`** — Devin skill definitions for Brave Search API (12 skills)
+- **`legacy/app/main.py`** — 8 routes: `POST/GET /api/reports`,
+  `GET /api/reports/nearby`, `GET /api/reports/{id}`,
+  `POST /api/reports/{id}/confirm`, `PATCH /api/reports/{id}` (staff),
+  `GET /api/stats`, `GET /api/meta`
+- **`legacy/app/db.py`** — ALL SQL lives here (stdlib sqlite3); single seam
+  for the eventual PostGIS swap. Haversine duplicate search (~30 m default),
+  point-in-polygon council-zone lookup over `data/council_zones.geojson`.
+- **`legacy/app/notify.py`** — SMTP duty-officer email; always appends to
+  `data/audit/notifications.log`; warns-not-fails when SMTP unconfigured.
+- **`docs/README.md`** — the design doc reading order (brief → decisions →
+  spec → spec-vs-mvp).
 
 ## Architectural Boundaries
 
-- `AGENTS.md` is **canonical**; `CLAUDE.md` mirrors it — edit AGENTS.md first
-- Global rules (shared across all projects) vs. project-specific guidance (filled in after clone)
-- `.devin/config.local.json` is gitignored — per-project, not shared
-- `.claude/settings.local.json` is gitignored — per-project, not shared
+- Staff endpoints gated by `X-Staff-Token` == env `STAFF_TOKEN`; reporter
+  endpoints public. Public serializers strip `reporter_*` contact fields.
+- Photos: `data/uploads/` (local disk in MVP; S3-compatible bucket in spec).
+- `AGENTS.md` canonical global rules; `CLAUDE.md` mirrors them + holds the
+  project section.
 
 ## Dependency Rules
 
-- No code dependencies (no package.json, requirements.txt, pyproject.toml)
-- Skills require `BRAVE_SEARCH_API_KEY` env var for live API calls (DECLARED in SKILL.md files)
-- Cloud strategy section references external repo `biofool/CloudManagement`
-
-## Coding Patterns (Enforced by Template)
-
-1. Never read/commit/log secrets  2. Never fail silently  3. No backslash line continuations
-4. Fix scripts in `scripts/fix/` with `--dry-run`  5. Stored data files over hardcoding (>15 items)
-6. Accurate API cost comparisons  7. Validation requests = report only  8. Cross-repo coordination
-9. Executive summaries for monorepos  10. CloudManagement coordination for cloud changes
-
-## Essential Commands
-
-```bash
-gh repo create <name> --template biofool/starter --private --clone   # create new repo from template
-curl -s https://raw.githubusercontent.com/biofool/starter/main/AGENTS.md  # fetch latest for sync
-```
-
-No build, test, or lint commands exist — this is a documentation/config template.
-
-## Highest-Risk Areas
-
-1. **AGENTS.md ↔ CLAUDE.md desync** — if rules diverge, Devin and Claude Code behave differently
-2. **Cloud strategy staleness** — references external CloudManagement repo; must stay current
-3. **Skill API key exposure** — skills document Brave API usage; key must not be committed
-
-## Navigation
-
-→ `index.md` for full routing → `architecture/system-overview.md` for data flow
-→ `workflows/template-sync.md` for sync process → `conventions/coding-patterns.md` for rules
+- MVP: `fastapi`, `uvicorn`, `python-multipart`, `pytest` (see
+  `legacy/requirements.txt`). No build step anywhere.
+- Spec adds: Node 20, Express, zod, pg, multer, sharp, node-pg-migrate,
+  React, Vite, Tailwind, vite-plugin-pwa.
+- External services (spec only): Postgres+PostGIS, S3 bucket, Postmark/SES
+  email, Twilio/NZ SMS gateway — none configured yet.

@@ -1,60 +1,44 @@
-# Coding Patterns & Conventions
+# Coding Patterns & Conventions — biofool/LeakDetector
 
-## Source
+## Sources
 
-All conventions are defined in `AGENTS.md` (canonical) and mirrored in
-`CLAUDE.md` §"Global conventions". These are **enforced by template** —
-downstream repos inherit them on clone.
+| Layer | File | Scope |
+|-------|------|-------|
+| Global rules | `AGENTS.md` (canonical) / `CLAUDE.md` (mirror) | all biofool repos |
+| Design-doc protocol | `docs/README.md`, `docs/decisions.md` header | this repo |
+| MVP code habits | `legacy/app/*` | reference only — frozen |
+| Spec conventions | `docs/spec.md` §2–§6 | the `backend/`+`frontend/` build |
 
-## The 10 Global Rules
+## Enforced global rules (enforcement → mechanism)
 
-| # | Rule | Strength | Enforcement |
-|---|------|----------|-------------|
-| 1 | Validation requests — do not change code | Documented convention | Agent reads AGENTS.md/CLAUDE.md |
-| 2 | Never read secrets files | Documented convention | Agent reads AGENTS.md/CLAUDE.md |
-| 3 | Never commit or log secrets | Documented convention | .gitignore + agent reads rules |
-| 4 | API cost comparisons — be accurate and specific | Documented convention | Agent reads AGENTS.md/CLAUDE.md |
-| 5 | Never fail silently | Documented convention | Agent reads AGENTS.md/CLAUDE.md |
-| 6 | No backslash line continuations in shell commands | Documented convention | Agent reads AGENTS.md/CLAUDE.md |
-| 7 | One-off fix scripts in scripts/fix/ with --dry-run | Documented convention | Agent reads AGENTS.md/CLAUDE.md |
-| 8 | Prefer stored data files over hardcoding (>15 items) | Documented convention | Agent reads AGENTS.md/CLAUDE.md |
-| 9 | Executive summaries for monorepo sub-projects | Documented convention | Agent reads AGENTS.md/CLAUDE.md |
-| 10 | Cross-repo coordination (paired repos) | Documented convention | Agent reads AGENTS.md/CLAUDE.md |
+- Secrets: never read values / never commit → `.githooks/pre-commit` +
+  `scripts/scan_secrets.py` + `.github/workflows/secret-scan.yml`
+- Dependency vulnerabilities: 3-layer gate → `dependency-review.yml` (PR),
+  `dependency-audit.yml` (scheduled `scripts/audit-deps.sh`), deploy
+  preflight
+- Never fail silently → notify.py's warn-and-log is the repo's canonical
+  example; the spec's outbox `failed` state + ERROR log is the same rule
+- Fix scripts → `scripts/fix/` + `--dry-run` + audit JSON in `data/audit/`
+- Lockfiles always committed (relevant once `package-lock.json` exists in
+  `backend/`)
 
-## Cloud Strategy Conventions
+## Design-doc protocol (repo-specific, binding)
 
-| Convention | Strength | Source |
-|-----------|----------|--------|
-| Update CloudManagement on cloud resource changes | Documented convention | AGENTS.md lines 135-141 |
-| Vendor cloud_management_client (stdlib-only, not pip) | Documented convention | AGENTS.md lines 169-174 |
-| Include `application` field in intent/actual reports | Documented convention | AGENTS.md lines 176-182 |
-| Client is best-effort (no-op without env vars, never raises) | Documented convention | AGENTS.md lines 191-193 |
-| Oracle A1 Always Free = 2 OCPU / 12 GB (not 4/24) | Documented convention | AGENTS.md line 143 |
+- `docs/brief.md` is read-only history.
+- Change the design → edit `docs/spec.md` **and** append `D-xx` to
+  `docs/decisions.md` (next number, four fields, tag spec line `[D-xx]`,
+  never renumber; reversals marked "Superseded by D-yy").
+- Code catches up to spec → tick the gap in `docs/spec-vs-mvp.md`.
 
-## Structural Conventions
+## Spec coding conventions (apply to `backend/`)
 
-| Convention | Strength | Evidence |
-|-----------|----------|---------|
-| AGENTS.md is canonical; CLAUDE.md mirrors | Documented convention | AGENTS.md line 11-13 |
-| Version stamp format: `YYYY-MM-DD — sourced from biofool/starter` | Documented convention | AGENTS.md line 1, CLAUDE.md line 1 |
-| Project-specific guidance goes below global block in AGENTS.md | Documented convention | AGENTS.md line 8-9 |
-| Skills are optional — remove if not needed | Documented convention | README.md line 70 |
-| .devin/config.local.json is gitignored (per-project) | Strongly recurring | .gitignore line 7 |
-| .claude/settings.local.json is gitignored (per-project) | Strongly recurring | .gitignore line 2 |
-
-## Naming Conventions
-
-| Pattern | Strength | Evidence |
-|---------|----------|---------|
-| Skill directories: kebab-case (`web-search`, `news-search`) | Strongly recurring (12/12) | .devin/skills/ |
-| SKILL.md frontmatter: `name` + `description` fields | Strongly recurring (12/12) | All SKILL.md files |
-| Env vars: uppercase with underscores (`BRAVE_SEARCH_API_KEY`) | Strongly recurring | AGENTS.md, SKILL.md files |
-
-## What's NOT Here
-
-- No code conventions (naming, error handling patterns in code) — template has no code
-- No test conventions — template has no tests
-- No persistence conventions — template has no data layer
-- No observability conventions — template has no runtime
-
-These are intentionally left to downstream repos to define in their project-specific sections.
+- All input validation through `zod` schemas.
+- All SQL in services/`db.ts` — no inline SQL in routes.
+- `ST_MakePoint(lng, lat)` — longitude first (spec's called-out bug risk).
+- Distances in metres via `::geography` casts; zone lookup `ST_Covers`.
+- Notifications only via `notification_outbox` rows — API never calls
+  email/SMS providers directly.
+- Public serializers must not emit `reporter_*` fields (D-12).
+- Public IDs rendered `WL-000123` from bigint (D-14).
+- Error envelope + rate limiting middleware already stubbed in
+  `backend/src/middleware/`.

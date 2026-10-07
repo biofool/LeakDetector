@@ -1,98 +1,114 @@
-repository_revision: da39d5f49f5d0f4937079f52eace3f41c7d2121c
-analysis_timestamp: "2026-08-22T00:00:00Z"
-analyzer_version: "context-compiler-v2"
+repository_revision: 0d2650f7b18701f127817c6ee1e318584dcc5b48
+analysis_timestamp: "2026-10-07T00:00:00Z"
+analyzer_version: "context-compiler-v2-manual-rewrite"
 pass_plan:
-  session_scope: "Full analysis of template/config repo — all 17 files, 0 LOC code"
+  session_scope: "Rewrite of stale starter-template context: repo is now a FastAPI MVP mid-pivot to Node/PostGIS + React monorepo"
   stages_executed: [0, 1, 2, 3, 4, 5, 6, 7, 8]
   stages_deferred: []
   components_in_scope:
+    - legacy-mvp-backend
+    - legacy-mvp-frontend
+    - legacy-tests
+    - docs-design-pack
+    - scripts-security
     - agents-md
     - claude-md
     - devin-skills
     - gitignore
-    - claude-settings
-    - readme
-    - technical-marketing-readme
+    - githooks-workflows
   components_deferred: []
-  depth: "template/config — no runtime paths, no code, no tests to map"
+  depth: "MVP code fully mapped; target design mapped from docs/spec.md only (code not yet written)"
 coverage:
   analyzed_domains:
+    - fastapi-mvp
+    - design-docs
     - shared-rules
     - ai-agent-config
-    - devin-skills
-    - gitignore-policy
-    - cloud-strategy-guidance
+    - security-tooling
   excluded_paths:
     - .git/
-  total_files: 17
-  code_files: 0
-  config_files: 1
-  doc_files: 16
+    - data/ (runtime artifacts: sqlite db, uploads, audit logs)
+    - .pytest_cache/
+  total_files_tracked: ~40
+  code_files: 9
+  config_files: 4
+  doc_files: ~27
 commands_run:
   - "find . -not -path './.git/*' -type f"
-  - "git log --oneline -5"
+  - "git status --short"
+  - "git log --oneline"
   - "git rev-parse HEAD"
-  - "wc -l (all files)"
-commands_not_run: []
+  - "grep route/schema/test enumeration"
+commands_not_run:
+  - "pytest (tests live under legacy/tests/ post-move; run from repo root)"
 limitations:
-  - "No application code — runtime workflow mapping is N/A; workflows cover template sync and skill usage instead"
-  - "No tests exist — test-map.yaml records this as a gap, not an omission"
-  - "No CI/CD — deployment/delivery analysis is N/A"
-  - "Cloud strategy section references external repos (CloudManagement) not analyzed here"
+  - "backend/ is untracked and was actively being written during analysis — treat its file list as a snapshot, not settled state."
+  - "frontend/ does not exist yet — all frontend facts come from docs/spec.md (DECLARED, not OBSERVED)."
+  - "README.md quick-start commands still reference the pre-move root paths (app.main, requirements.txt) — actual locations are under legacy/."
 artifacts:
   - path: .ai-context/index.md
-    source_paths: [AGENTS.md, CLAUDE.md, README.md, TechnicalMarketingReadMe.md]
-    last_verified_revision: da39d5f
+    source_paths: [README.md, CLAUDE.md, docs/README.md, docs/spec.md, docs/spec-vs-mvp.md]
+    last_verified_revision: 0d2650f
   - path: .ai-context/quickstart.md
-    source_paths: [AGENTS.md, CLAUDE.md, README.md]
-    last_verified_revision: da39d5f
+    source_paths: [README.md, CLAUDE.md, legacy/app/main.py, docs/spec.md]
+    last_verified_revision: 0d2650f
   - path: .ai-context/architecture/system-overview.md
-    source_paths: [AGENTS.md, CLAUDE.md, README.md, TechnicalMarketingReadMe.md]
-    last_verified_revision: da39d5f
+    source_paths: [docs/spec.md, docs/decisions.md, docs/spec-vs-mvp.md, legacy/app/]
+    last_verified_revision: 0d2650f
   - path: .ai-context/architecture/index.md
-    source_paths: [AGENTS.md, CLAUDE.md]
-    last_verified_revision: da39d5f
+    source_paths: [docs/spec.md, docs/README.md]
+    last_verified_revision: 0d2650f
+  - path: .ai-context/components/legacy-mvp.md
+    source_paths: [legacy/app/main.py, legacy/app/db.py, legacy/app/notify.py, legacy/static/]
+    last_verified_revision: 0d2650f
+  - path: .ai-context/components/docs-design.md
+    source_paths: [docs/brief.md, docs/spec.md, docs/decisions.md, docs/spec-vs-mvp.md, docs/README.md]
+    last_verified_revision: 0d2650f
   - path: .ai-context/components/agents-md.md
     source_paths: [AGENTS.md]
-    last_verified_revision: da39d5f
+    last_verified_revision: 0d2650f
   - path: .ai-context/components/claude-md.md
     source_paths: [CLAUDE.md]
-    last_verified_revision: da39d5f
+    last_verified_revision: 0d2650f
   - path: .ai-context/components/devin-skills.md
     source_paths: [.devin/skills/*/SKILL.md]
-    last_verified_revision: da39d5f
+    last_verified_revision: 0d2650f
   - path: .ai-context/components/gitignore.md
     source_paths: [.gitignore]
-    last_verified_revision: da39d5f
+    last_verified_revision: 0d2650f
   - path: .ai-context/workflows/template-sync.md
-    source_paths: [README.md, AGENTS.md, CLAUDE.md]
-    last_verified_revision: da39d5f
-  - path: .ai-context/workflows/cloud-strategy-sync.md
     source_paths: [AGENTS.md]
-    last_verified_revision: da39d5f
+    last_verified_revision: 0d2650f
+  - path: .ai-context/workflows/cloud-strategy-sync.md
+    source_paths: [AGENTS.md, docs/spec.md]
+    last_verified_revision: 0d2650f
+  - path: .ai-context/workflows/spec-build.md
+    source_paths: [docs/spec.md, docs/spec-vs-mvp.md]
+    last_verified_revision: 0d2650f
   - path: .ai-context/change-impact/relationships.yaml
-    source_paths: [AGENTS.md, CLAUDE.md, .gitignore, .claude/settings.json, .devin/skills/]
-    last_verified_revision: da39d5f
+    source_paths: [docs/, legacy/, scripts/, .github/workflows/]
+    last_verified_revision: 0d2650f
   - path: .ai-context/conventions/coding-patterns.md
-    source_paths: [AGENTS.md, CLAUDE.md]
-    last_verified_revision: da39d5f
+    source_paths: [AGENTS.md, CLAUDE.md, docs/README.md, docs/decisions.md]
+    last_verified_revision: 0d2650f
   - path: .ai-context/testing/test-map.yaml
-    source_paths: []
-    last_verified_revision: da39d5f
+    source_paths: [legacy/tests/test_api.py]
+    last_verified_revision: 0d2650f
   - path: .ai-context/debt/register.yaml
-    source_paths: [AGENTS.md, CLAUDE.md, README.md]
-    last_verified_revision: da39d5f
+    source_paths: [docs/spec-vs-mvp.md, docs/decisions.md]
+    last_verified_revision: 0d2650f
   - path: .ai-context/decisions/architecture-decisions.md
-    source_paths: [AGENTS.md, CLAUDE.md, README.md, TechnicalMarketingReadMe.md]
-    last_verified_revision: da39d5f
+    source_paths: [docs/decisions.md, docs/spec.md]
+    last_verified_revision: 0d2650f
   - path: .ai-context/unknowns/register.yaml
-    source_paths: [AGENTS.md, .devin/skills/]
-    last_verified_revision: da39d5f
+    source_paths: [docs/decisions.md, docs/spec-vs-mvp.md, git status]
+    last_verified_revision: 0d2650f
   - path: .ai-context/deltas/latest.yaml
-    source_paths: []
-    last_verified_revision: da39d5f
+    source_paths: [git status]
+    last_verified_revision: 0d2650f
 unresolved_unknowns:
-  - "UNKNOWN-001: Exact list of downstream repos currently synced to this template"
-  - "UNKNOWN-002: Whether .devin/config.local.json.example exists (README references it)"
-  - "UNKNOWN-003: Whether any automated sync mechanism exists beyond manual curl+merge"
-prior_analyzed_revision: null
+  - "UNKNOWN-001: D-08 — SLA hours are placeholders; need each council's Long-Term Plan targets"
+  - "UNKNOWN-002: D-11 — confirm with product owner that out-of-zone reports are rejected 422"
+  - "UNKNOWN-003: D-15 — Railway has no NZ region; data residency under Privacy Act 2020 IPP 12 unconfirmed"
+  - "UNKNOWN-004: whether the staged legacy/ move + docs/ will be committed as-is or amended"
+prior_analyzed_revision: da39d5f

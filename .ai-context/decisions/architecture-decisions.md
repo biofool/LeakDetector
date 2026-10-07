@@ -1,81 +1,61 @@
-# Architecture Decisions
+# Architecture Decisions — biofool/LeakDetector
 
-## ADR-001: AGENTS.md as canonical rules source
+The authoritative decision log is **`docs/decisions.md`** (D-01–D-18,
+with Status). This file summarizes the load-bearing ones; add new design
+deviations there, not here.
 
-**Decision**: AGENTS.md is the canonical home for cross-project rules. CLAUDE.md
-mirrors the non-negotiable items in condensed form.
+## D-18 — Monorepo rebuild (Change, brief addendum)
 
-**Rationale**: Devin CLI reads AGENTS.md as its native rules file. Claude Code
-reads CLAUDE.md. Having two canonical sources would cause desync. AGENTS.md
-holds full text; CLAUDE.md holds a mirror.
+Spec targets Node/Express + PostGIS `/backend` + React/Vite/Tailwind
+`/frontend`, built by Windsurf SWE-2. The FastAPI/SQLite MVP is frozen in
+`legacy/`. **Evidence**: docs/decisions.md D-18, commit `0d2650f`.
+**Classification**: DECLARED (backend in progress; frontend not started).
 
-**Evidence**: AGENTS.md lines 11-13, CLAUDE.md lines 28-30
-**Classification**: DECLARED
+## D-04 — Notification outbox + worker (Addition)
 
-## ADR-002: GitHub template repository (not a package)
+API never sends email/SMS directly; it writes `notification_outbox` rows
+in the same transaction as the report. A worker drains every 30 s
+(`FOR UPDATE SKIP LOCKED`, 5 retries → `failed`), runs the SLA sweep every
+5 min with `dedupe_key`, and cascades resolution to duplicates.
+**Evidence**: docs/decisions.md D-04, spec §1.4–§3; `backend/src/worker.ts`.
+**Classification**: DECLARED→OBSERVED (outbox service exists in backend/).
 
-**Decision**: Distribute shared config as a GitHub template repo, not a
-pip/npm package or git submodule.
+## D-02 — Shared category/location_type enum (Change)
 
-**Rationale**: Template repos create a one-time copy; downstream repos can
-diverge without breaking others. Simpler than submodules; no runtime dependency.
+Reporter sets `category` (immutable); staff maintain `location_type`;
+**SLA uses `location_type`**. Same enum for both.
+**Evidence**: docs/decisions.md D-02, spec §2.
 
-**Evidence**: README.md line 3 ("Use this template on GitHub"), README.md line 6
-(`gh repo create --template`)
-**Classification**: OBSERVED
+## D-01 — `computeSLA(severity, …)` not category (Change)
 
-## ADR-003: Manual sync (no automated mechanism)
+SLA matrix keyed on severity × location_type (spec §4); MVP used size-only.
+**Evidence**: D-01, spec §4, `backend/src/services/sla.ts`.
 
-**Decision**: Updates to template rules are synced to downstream repos via
-manual `curl` + merge, not automated tooling.
+## D-05 / D-12 — JWT staff auth + council scoping (Addition)
 
-**Rationale**: Template repos don't maintain a link to downstream repos. Manual
-sync gives control over what changes propagate and when.
+`POST /auth/login` issues JWT; reporter contact visible only to the owning
+council's staff (replaces the MVP's single static `X-Staff-Token`).
+**Evidence**: D-05, D-12; `backend/src/routes/auth.ts`,
+`middleware/staffAuth.ts`.
 
-**Evidence**: README.md lines 63-68, `shared_template_config.mdc` §Syncing
-**Classification**: OBSERVED (no automation found) + DECLARED (sync instructions)
+## D-10 — Duplicates: link, no chains, cascade (Assumption)
 
-## ADR-004: Skills are optional and self-contained
+Staff set `is_duplicate_of`; no duplicate chains; resolving the canonical
+report resolves duplicates. **Evidence**: D-10, spec §5.
 
-**Decision**: Brave Search skills ship in `.devin/skills/` but are optional —
-repos can remove the directory.
+## D-09 / D-14 — PostGIS + public refs (Assumption/Addition)
 
-**Rationale**: Not all projects need web search. Skills are self-contained
-Markdown files with no internal dependencies.
+`geometry(Point,4326)`, metre-accurate `::geography` casts +
+expression index; bigint ids shown as `WL-000123`.
+**Evidence**: D-09, D-14, spec §2.
 
-**Evidence**: README.md line 70 ("Remove the directory if the project doesn't need web search")
-**Classification**: DECLARED
+## D-17 — Photos optional, re-encoded, EXIF stripped (Assumption)
 
-## ADR-005: Version stamp for sync tracking
+0–3 photos, ≤2 MB browser-compressed, sharp re-encode to webp, EXIF
+stripped, `is_hidden` moderation flag. **Evidence**: D-17;
+`backend/src/services/photos.ts`.
 
-**Decision**: Both AGENTS.md and CLAUDE.md carry a version stamp
-(`YYYY-MM-DD — sourced from biofool/starter`) at the top.
+## D-15 — Railway deploy, no NZ region (Assumption, NEEDS CONFIRMATION)
 
-**Rationale**: Downstream repos can check if they're current by comparing
-their stamp to the template's. The date is the sync date, not the template's
-creation date.
-
-**Evidence**: AGENTS.md line 1, CLAUDE.md line 1, `shared_template_config.mdc` §Versioning
-**Classification**: DECLARED
-
-## ADR-006: cloud_management_client is vendored, not pip-installed
-
-**Decision**: The CloudManagement client is copied into repos rather than
-pip-installed.
-
-**Rationale**: It's stdlib-only (no external deps), so vendoring avoids
-dependency management overhead. Trade-off: vendored copies must be manually
-kept in sync.
-
-**Evidence**: AGENTS.md lines 169-174
-**Classification**: DECLARED
-
-## ADR-007: .gitignore uses negation for .env.example
-
-**Decision**: `.env.*` pattern with `!.env.example` negation.
-
-**Rationale**: Blocks all real env files while allowing an example template
-to be committed.
-
-**Evidence**: .gitignore lines 55-56
-**Classification**: OBSERVED (inferred rationale)
+Data residency risk under Privacy Act 2020 IPP 12 — see
+`unknowns/register.yaml` UNKNOWN-003.

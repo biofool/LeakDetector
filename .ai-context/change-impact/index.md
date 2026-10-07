@@ -1,16 +1,14 @@
-# Change-Impact Index
+# Change Impact — biofool/LeakDetector
 
-## Relationships
+`relationships.yaml` maps what touches what. Highest-fan-in surfaces:
 
-See `relationships.yaml` for structured dependency map of all 6 components.
-
-## Highest-Risk Changes
-
-| Change | Impact | Risk Level |
-|--------|--------|------------|
-| Edit AGENTS.md global rules | All downstream repos; CLAUDE.md must mirror | **High** |
-| Edit cloud strategy section | All repos + CloudManagement + downstream PRDs | **High** |
-| Remove .gitignore secrets entries | Credential leak risk in all downstream repos | **High** |
-| Edit CLAUDE.md mirror (without AGENTS.md) | Agent behavior divergence | **Medium** |
-| Add/remove Devin skill | Downstream repos with skills dir | **Low** |
-| Edit README.md | New clone experience only | **Low** |
+1. **`docs/spec.md`** — every backend file implements it; changing it
+   without a `D-xx` decision row breaks the repo's own protocol.
+2. **`backend/migrations/001_init.sql`** — schema is the contract for
+   routes, services, worker, and (later) the frontend's expectations.
+3. **`backend/src/util/serialize.ts`** — the public/staff field split;
+   mistakes here leak reporter contact details (privacy boundary, D-12).
+4. **`legacy/app/db.py`** — frozen; changes have no path to production
+   anyway, but tests in `legacy/tests/` pin its behaviour.
+5. **`AGENTS.md`** global block — template-synced; edits get overwritten
+   on the next template sync. Project notes belong in `CLAUDE.md`.

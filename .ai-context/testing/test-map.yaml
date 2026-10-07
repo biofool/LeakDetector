@@ -1,42 +1,31 @@
-# Test & Validation Routing Map
-# This template repo has NO tests, NO build system, NO linter, NO CI/CD.
-# All targets are N/A — recorded as a gap, not an omission.
+# Test Map — biofool/LeakDetector
 
-targets:
-  - target: template-content
-    description: "Validate template files are syntactically correct and in sync"
-    unit: []
-    integration: []
-    typecheck: []
-    lint: []
-    notes:
-      - "No automated validation exists for template content"
-      - "Manual checks: AGENTS.md ↔ CLAUDE.md mirror consistency, version stamp currency"
-      - "YAML/JSON validity: .claude/settings.json, SKILL.md frontmatter"
+suites:
+  - name: mvp-api
+    path: legacy/tests/test_api.py
+    runner: "python3 -m pytest legacy/tests/ -q"
+    framework: pytest
+    count: 7
+    tests:
+      - test_create_and_get_report          # POST /api/reports → GET round-trip
+      - test_rejects_out_of_bounds          # lat/lon validation → 4xx
+      - test_rejects_bad_category           # enum validation → 4xx
+      - test_nearby_duplicate_detection     # /api/reports/nearby radius behaviour
+      - test_confirm_report                 # POST /api/reports/{id}/confirm bumps count
+      - test_status_lifecycle_requires_staff_token  # PATCH gated by X-Staff-Token
+      - test_stats_shape                    # GET /api/stats response shape
+    covers:
+      - legacy/app/main.py (all 8 routes at least touched)
+      - legacy/app/db.py (insert/nearby/confirm/stats paths)
+    does_not_cover:
+      - photo upload pipeline
+      - notify.py SMTP/audit paths
+      - zone_for_point edge cases
+      - public serializer contact-stripping (assertion absent — spec M3 adds it)
 
-  - target: skills
-    description: "Validate Devin skill definitions"
-    unit: []
-    integration: []
-    typecheck: []
-    lint: []
-    notes:
-      - "Skills are Markdown documentation — no executable code to test"
-      - "Live API calls require BRAVE_SEARCH_API_KEY (not tested in template)"
-      - "Manual check: SKILL.md frontmatter has name + description fields"
-
-  - target: gitignore
-    description: "Validate .gitignore patterns"
-    unit: []
-    integration: []
-    typecheck: []
-    lint: []
-    notes:
-      - "No automated validation"
-      - "Manual check: secrets entries present (.env, *.key, *.pem, credentials.json, cookies.txt)"
-
-# Commands that DO NOT exist in this repo (recorded to prevent invention):
-# - No `npm test`, `pytest`, `make test`, `tox`, or any test runner
-# - No `npm run lint`, `flake8`, `ruff`, or any linter
-# - No `tsc`, `mypy`, `pyright`, or any type checker
-# - No CI/CD pipeline (no .github/workflows/, no .gitlab-ci.yml)
+  - name: backend-jest
+    path: backend/
+    runner: "cd backend && npm test"
+    framework: jest (NODE_OPTIONS=--experimental-vm-modules, ESM)
+    count: 0
+    status: "config present, no test files yet — spec §6.6 defines required coverage per milestone"

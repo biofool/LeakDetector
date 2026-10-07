@@ -1,193 +1,53 @@
-# Change-impact relationships for biofool/starter template components
-# Distinguishes: code/runtime/data/config/interface/operational dependency
+# Change-impact relationships — biofool/LeakDetector
 
-components:
-  - name: agents-md
-    path: AGENTS.md
-    depends_on:
-      - type: operational
-        target: "biofool/CloudManagement (external repo, cloud strategy reference)"
-      - type: operational
-        target: "biofool/CloudManagement/docs/PRD.md §6 (job-placement policy)"
-      - type: operational
-        target: "biofool/CloudManagement/docs/per-repo-api-specs.md"
-    used_by:
-      - "Devin CLI (reads at session start)"
-      - "All downstream biofool repos (via template clone + manual sync)"
-      - "CLAUDE.md (mirrors global conventions)"
-    interfaces:
-      - "Markdown document read by Devin CLI"
-      - "Version stamp at line 1 (format: YYYY-MM-DD)"
-    data_stores: []
-    configuration: []
-    runtime_workflows: []
-    decisions:
-      - "AGENTS.md is canonical; CLAUDE.md mirrors (DECLARED line 11-13)"
-    known_risks:
-      - "AGENTS.md ↔ CLAUDE.md desync if mirror not updated"
-      - "Cloud strategy section references external repos that may move/change"
-    security_sensitive: true
-    operationally_sensitive: true
-    before_modifying:
-      - "MUST update CLAUDE.md §Global conventions to mirror"
-      - "MUST bump version stamp date in both files"
-      - "If changing cloud strategy: update CloudManagement repo + downstream PRDs"
-      - "If adding a rule: add full text here + condensed mirror in CLAUDE.md"
-    test_map_target: null
-    evidence:
-      - path: AGENTS.md
-        lines: "1-205"
-        evidence_type: "source document"
-        confidence: high
+relationships:
+  - change: "docs/spec.md"
+    impacts:
+      - "docs/decisions.md (MUST add D-xx row — repo protocol)"
+      - "docs/spec-vs-mvp.md (re-check gap list)"
+      - "backend/src/* (all services implement the spec)"
+      - "backend/migrations/*.sql (schema contract)"
+      - "CLAUDE.md project section (if the pivot notice changes)"
+    rule: "spec is canonical; code follows spec, not the reverse"
 
-  - name: claude-md
-    path: CLAUDE.md
-    depends_on:
-      - type: config
-        target: "AGENTS.md (canonical source of global conventions)"
-    used_by:
-      - "Claude Code (reads at session start)"
-      - "All downstream biofool repos (via template clone)"
-    interfaces:
-      - "Markdown document read by Claude Code"
-      - "Version stamp at line 1 (must match AGENTS.md)"
-    data_stores: []
-    configuration: []
-    runtime_workflows: []
-    decisions:
-      - "Mirrors AGENTS.md in condensed form (DECLARED line 28-30)"
-    known_risks:
-      - "Desync from AGENTS.md if not updated together"
-      - "Project-specific sections are empty placeholders — downstream repos may not fill them in"
-    security_sensitive: false
-    operationally_sensitive: false
-    before_modifying:
-      - "If changing global conventions: edit AGENTS.md first, then mirror here"
-      - "MUST keep version stamp in sync with AGENTS.md"
-      - "Mirror must cover all 10 rules + cloud strategy"
-    test_map_target: null
-    evidence:
-      - path: CLAUDE.md
-        lines: "1-78"
-        evidence_type: "source document"
-        confidence: high
+  - change: "docs/decisions.md"
+    impacts:
+      - "docs/spec.md (tagged [D-xx] lines must match)"
+      - ".ai-context/decisions/architecture-decisions.md (summary refresh)"
+    rule: "append-only, never renumber, Superseded-by for reversals"
 
-  - name: devin-skills
-    path: .devin/skills/
-    depends_on:
-      - type: operational
-        target: "Brave Search API (external, requires BRAVE_SEARCH_API_KEY)"
-    used_by:
-      - "Devin CLI (reads SKILL.md to make API calls)"
-      - "Downstream repos that keep the skills directory"
-    interfaces:
-      - "YAML frontmatter (name, description) + Markdown documentation"
-      - "Brave Search API endpoints (documented, not executable)"
-    data_stores: []
-    configuration:
-      - "BRAVE_SEARCH_API_KEY (env var, required for live calls)"
-    runtime_workflows: []
-    decisions:
-      - "Skills are optional — repos can remove the directory (DECLARED README.md line 70)"
-    known_risks:
-      - "search/SKILL.md appears to be a duplicate of bx/SKILL.md (same frontmatter name: bx)"
-      - "API documentation may go stale if Brave API changes"
-    security_sensitive: true
-    operationally_sensitive: false
-    before_modifying:
-      - "Verify against current Brave API docs before changing"
-      - "Do not hardcode API keys in SKILL.md files"
-      - "If adding/removing a skill: update AGENTS.md §Skills list and README.md"
-    test_map_target: null
-    evidence:
-      - path: .devin/skills/
-        evidence_type: "12 SKILL.md files"
-        confidence: high
+  - change: "backend/migrations/001_init.sql"
+    impacts:
+      - "backend/src/services/{zones,duplicates,sla,outbox}.ts"
+      - "backend/src/routes/reports.ts"
+      - "backend/src/util/serialize.ts"
+      - "backend/scripts/seed.ts"
+    rule: "schema is the DB contract; index/geom choices are spec §2"
 
-  - name: gitignore
-    path: .gitignore
-    depends_on: []
-    used_by:
-      - "All downstream biofool repos (inherited on clone)"
-      - "Git (enforces ignore rules)"
-    interfaces:
-      - "Git ignore patterns"
-    data_stores: []
-    configuration: []
-    runtime_workflows: []
-    decisions:
-      - "!.env.example negation preserves example template while blocking real env files"
-    known_risks:
-      - "Removing secrets entries risks credential leaks"
-    security_sensitive: true
-    operationally_sensitive: false
-    before_modifying:
-      - "NEVER remove secrets entries (.env, *.key, *.pem, credentials.json, cookies.txt)"
-      - "Preserve !.env.example negation if .env.* pattern remains"
-      - "AGENTS.md rule 3: 'keep those entries when editing .gitignore'"
-    test_map_target: null
-    evidence:
-      - path: .gitignore
-        lines: "1-82"
-        evidence_type: "config file"
-        confidence: high
+  - change: "backend/src/util/serialize.ts"
+    impacts:
+      - "every public route response (privacy boundary — strips reporter_*)"
+      - "frontend map/track rendering fields"
+    rule: "D-12 — reporter contact must never reach public payloads"
 
-  - name: claude-settings
-    path: .claude/settings.json
-    depends_on: []
-    used_by:
-      - "Claude Code (permissions allowlist)"
-      - "Downstream repos (build on empty scaffold)"
-    interfaces:
-      - "JSON permissions.allow array"
-    data_stores: []
-    configuration:
-      - "permissions.allow: [] (empty — build per-project)"
-    runtime_workflows: []
-    decisions:
-      - "Ships empty to avoid over-permissive defaults"
-    known_risks:
-      - "Empty allowlist means every command needs approval — downstream repos must extend"
-    security_sensitive: false
-    operationally_sensitive: false
-    before_modifying:
-      - "Changes here only affect new clones — existing repos have their own settings"
-    test_map_target: null
-    evidence:
-      - path: .claude/settings.json
-        lines: "1-5"
-        evidence_type: "config file"
-        confidence: high
+  - change: "backend/src/worker.ts"
+    impacts:
+      - "notification_outbox drain behaviour (spec §1.4 step 5)"
+      - "SLA sweep timing/dedupe (spec §3)"
+      - "resolution cascade to duplicates (D-10)"
 
-  - name: readme
-    path: README.md
-    depends_on:
-      - type: config
-        target: "AGENTS.md (references global rules)"
-      - type: config
-        target: "CLAUDE.md (references mirror)"
-      - type: config
-        target: ".devin/skills/ (references skills)"
-    used_by:
-      - "Developers creating new repos from template"
-      - "GitHub template page visitors"
-    interfaces: []
-    data_stores: []
-    configuration: []
-    runtime_workflows:
-      - "template-sync (documents after-clone checklist)"
-    decisions:
-      - "After-clone checklist instructs filling in CLAUDE.md, adding project rules, copying config"
-    known_risks:
-      - "References .devin/config.local.json.example which may not exist (UNKNOWN-002)"
-    security_sensitive: false
-    operationally_sensitive: false
-    before_modifying:
-      - "Keep after-clone checklist in sync with actual template contents"
-      - "Update global rules list if AGENTS.md rules change"
-    test_map_target: null
-    evidence:
-      - path: README.md
-        lines: "1-72"
-        evidence_type: "documentation"
-        confidence: high
+  - change: "legacy/**"
+    impacts:
+      - "legacy/tests/test_api.py"
+      - "nothing else — frozen reference code, no downstream consumers"
+    rule: "do not extend; spec-vs-mvp.md documents deliberate differences"
+
+  - change: ".gitignore"
+    impacts:
+      - ".githooks/pre-commit assumptions (secret patterns stay ignored)"
+      - "data/ runtime artifacts (sqlite/uploads/audit stay local)"
+
+  - change: "AGENTS.md global block"
+    impacts:
+      - "CLAUDE.md global-conventions mirror (must be edited together)"
+    rule: "global rules sync from biofool/starter — don't fork them here"

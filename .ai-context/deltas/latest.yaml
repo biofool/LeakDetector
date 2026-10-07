@@ -1,15 +1,28 @@
-from_revision: null
-to_revision: da39d5f49f5d0f4937079f52eace3f41c7d2121c
-added: []
-changed: []
-invalidated: []
-conflicts: []
-reverified: []
-unknowns_added:
-  - UNKNOWN-001
-  - UNKNOWN-002
-  - UNKNOWN-003
-  - UNKNOWN-004
-  - UNKNOWN-005
-unknowns_resolved: []
-notes: "Initial context compilation — all artifacts created from scratch."
+# Delta — latest observed change
+
+delta:
+  revision: 0d2650f
+  previous_revision: d8a8a8f
+  date: "2026-10-07"
+  summary: >
+    Repo pivoted from "template clone with an MVP" to "spec-driven rebuild":
+    docs/ design pack committed (brief/spec/decisions/spec-vs-mvp/README,
+    ~1000 lines), and the entire FastAPI MVP moved root → legacy/ unchanged.
+    README.md + CLAUDE.md gained the pivot notice.
+  changes:
+    - path: docs/
+      change: added
+      detail: "5 files: brief.md, spec.md (622 lines, M1-M11 build guide), decisions.md (D-01..D-18), spec-vs-mvp.md, README.md"
+    - path: legacy/
+      change: moved
+      detail: "git mv app/ static/ tests/ .env.example requirements.txt data/.gitkeep → legacy/*"
+    - path: README.md, CLAUDE.md
+      change: modified
+      detail: "document the MVP-vs-spec split (command sections still show pre-move paths)"
+  worktree_state_at_analysis:
+    - "backend/ — untracked, spec build actively landing (TS/Express/PostGIS, ~17 src files + migrations + node_modules installed)"
+    - "no frontend/ yet"
+  next_expected:
+    - "backend/ committed per spec milestones M1–M7"
+    - "frontend/ scaffolded per M8–M10"
+    - "README/CLAUDE command sections updated for the monorepo layout"

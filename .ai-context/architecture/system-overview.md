@@ -1,82 +1,80 @@
-# System Overview — biofool/starter
+# System Overview — biofool/LeakDetector
 
 ## A. System Context
 
-This repo is a **configuration distribution hub**, not a running system.
+A civic-tech reporting product: NZ residents report water leaks (footpath /
+berm / road / meter / outside tap) from a phone; council staff triage and
+resolve under SLA timers.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                  biofool/starter (template)                   │
-│                                                               │
-│  AGENTS.md ──┐                                                │
-│  CLAUDE.md ──┤  10 global rules + cloud strategy              │
-│  .gitignore ─┤  secrets/cruft prevention                      │
-│  .claude/ ───┤  permissions scaffold                          │
-│  .devin/ ────┘  12 Brave Search skills                        │
-│                                                               │
-│  "Use this template" on GitHub ── or ── gh repo create        │
-└──────────────────────┬──────────────────────────────────────┘
-                       │ clone (one-time)
-                       ▼
-    ┌──────────────────┴──────────────────┐
-    │     Downstream biofool repos         │
-    │  (AIRichardMoon, quantumaikido.com,  │
-    │   WorldStudioFinder, CloudManagement,│
-    │   AikiField, ClipQuotes, etc.)       │
-    └──────────────────────────────────────┘
-                       │ manual curl + merge (ongoing sync)
-                       ◄──────────────────────────────────
-                       │
-    ┌──────────────────┴──────────────────┐
-    │  biofool/CloudManagement (external)  │
-    │  Canonical cloud strategy source     │
-    │  Referenced by AGENTS.md §cloud      │
-    └──────────────────────────────────────┘
+ Reporter (phone)                                 Council staff
+ / report form    /map public status board       /staff dashboard
+      │  HTTPS (JSON, multipart)                      │  HTTPS + staff auth
+      ▼                                               ▼
+ ┌──────────────────────────────────────────────────────────┐     ┌────────────────┐
+ │ API                                                       │────▶│ Photo storage  │
+ │ validate → zone lookup → SLA → insert report + outbox     │     └────────────────┘
+ └───────────────────────────┬──────────────────────────────┘
+                             │ SQL
+ ┌───────────────────────────▼──────────────────────────────┐
+ │ DB: reports, photos, council zones, staff, outbox        │
+ └───────────────────────────▲──────────────────────────────┘
+                             │ poll outbox · SLA sweep
+ ┌───────────────────────────┴──────────────────────────────┐     Email duty officer
+ │ Worker                                                   │────▶ SMS if major
+ └──────────────────────────────────────────────────────────┘     Reporter receipts
 ```
 
-### Users
-- **Developers** creating new biofool projects (clone template)
-- **AI coding agents** (Devin, Claude Code) reading rules at runtime
-- **Maintainer** updating shared rules across the portfolio
+## B. Two Implementations
 
-### External Systems
-- **GitHub** — template hosting, `gh repo create --template`
-- **Brave Search API** — skills document usage but contain no executable code; requires `BRAVE_SEARCH_API_KEY`
-- **CloudManagement repo** (`biofool/CloudManagement`) — referenced by cloud strategy section; not part of this repo
+### Current (OBSERVED) — `legacy/` MVP
 
-### Trust Boundaries
-- Template content is trusted as-is by downstream repos (OBSERVED: no validation layer)
-- `.devin/config.local.json` and `.claude/settings.local.json` are gitignored — per-project override boundary
-- Secrets are excluded by `.gitignore` (`.env`, `*.key`, `*.pem`, `credentials.json`, `cookies.txt`)
+- **API**: FastAPI, `legacy/app/main.py` — 8 routes.
+- **DB**: stdlib `sqlite3` via `legacy/app/db.py` — one `reports` table;
+  haversine for nearby-duplicates (~30 m default); pure-Python
+  point-in-polygon over `data/council_zones.geojson` (optional — absent =
+  unassigned).
+- **Photos**: `data/uploads/` on local disk.
+- **Notify**: `legacy/app/notify.py` — SMTP to duty officer; ALWAYS writes
+  `data/audit/notifications.log`; warns-not-fails unconfigured.
+- **Auth**: `X-Staff-Token` header == env `STAFF_TOKEN` on staff routes only.
+- **Frontend**: `legacy/static/` — Leaflet + OSM via CDN, no build.
+- **Tests**: `legacy/tests/test_api.py` — 7 pytest tests.
 
-## B. Deployable Units
+### Target (DECLARED + in-progress) — `docs/spec.md`, `backend/`
 
-**None.** Zero application code. No services, frontends, APIs, workers, CLIs,
-jobs, databases, or queues. This is a documentation/configuration template.
+- **`/backend`**: Node 20 + TypeScript + Express; zod validation; `pg` →
+  Postgres 16 + PostGIS (`geometry(Point,4326)`, `ST_Covers` zone lookup,
+  `ST_DWithin` 30 m dup search, `ST_MakePoint(lng,lat)` — lon first);
+  `multer` → `sharp` (≤2 MB, webp, EXIF strip) → S3-compatible bucket;
+  JWT staff auth (argon2), council-scoped.
+- **`worker`** (same package, `npm run worker`): drains
+  `notification_outbox` every 30 s (`FOR UPDATE SKIP LOCKED`, 5 retries);
+  SLA sweep every 5 min (dedupe_key); resolution cascade to duplicates.
+- **`/frontend`**: React + Vite + Tailwind PWA (`vite-plugin-pwa`) —
+  report flow `/`, track page, public map `/map`, staff dashboard `/staff`
+  (30 s polling, sorted by `sla_due_at`). NOT STARTED.
+- **Deploy**: Railway — services `web`/`api`/`worker` + Postgres plugin;
+  envs production+staging; `npm run migrate` pre-deploy on `api`.
+- **Data residency [D-15]**: Railway has no NZ region — reporter contact
+  details are personal info under Privacy Act 2020 (IPP 12); needs council
+  sign-off.
 
-## C. Components
+## C. Report Lifecycle (spec §1.4)
 
-See `../components/` directory for per-component files:
-- `agents-md.md` — canonical rules (highest-traffic, highest-risk)
-- `claude-md.md` — mirror file (must stay in sync with AGENTS.md)
-- `devin-skills.md` — 12 Brave Search skill definitions
-- `gitignore.md` — secrets/cruft prevention policy
+Locate → duplicate check (`GET /reports/nearby`) → submit
+(`POST /reports`, multipart ≤3 photos) → zone lookup (422 if outside every
+zone, D-11) → `computeSLA(severity, location_type)` → single-transaction
+insert (report + photos + outbox rows) → worker alerts → staff triage
+(sorted by `sla_due_at`) → SLA sweep → resolve (cascades to duplicates) →
+resolved shown on public map for 7 days.
 
-## D. Runtime/Code Paths
+## D. Status Enums
 
-**N/A.** No runtime. The only "paths" are:
-1. **Clone path**: GitHub template → new repo (one-time, via `gh repo create`)
-2. **Sync path**: `curl` template AGENTS.md → manual merge into downstream repo (ongoing)
-3. **Read path**: AI agent reads AGENTS.md/CLAUDE.md at session start
-
-See `../workflows/template-sync.md` for the sync workflow.
-
-## E. Change Impact Summary
-
-| Change | Affects | Risk |
-|--------|---------|------|
-| Edit AGENTS.md global rules | All downstream repos that synced | High — rules diverge if CLAUDE.md not updated |
-| Edit CLAUDE.md mirror | Claude Code behavior in downstream repos | Medium — must match AGENTS.md |
-| Add/remove skill | Downstream repos with skills dir | Low — skills are self-contained |
-| Edit .gitignore | Downstream repo commit hygiene | Medium — removing secrets entries risks leaks |
-| Edit cloud strategy section | All repos referencing CloudManagement | High — stale guidance → wrong cloud placement |
+- **MVP**: `received → investigating → contractor_assigned → repaired /
+  private_owner / duplicate / rejected`; severity is `size`:
+  trickle/steady/flowing/burst/unknown.
+- **Spec**: `received → verified → assigned → resolved` +
+  `closed_private`; severity `major`/`minor`; `category` (reporter-set,
+  immutable) vs `location_type` (staff-corrected, drives SLA) — one shared
+  enum (D-02).

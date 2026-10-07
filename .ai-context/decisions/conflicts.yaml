@@ -1,5 +1,35 @@
-# Conflicts register
-# No contradictions found between declared claims and observed behavior.
-# This file is populated when evidence conflicts arise.
+# Decision Conflicts — places where artifacts disagree
 
-conflicts: []
+conflicts:
+  - id: CONFLICT-001
+    summary: "Docs/commands describe pre-move layout"
+    detail: >
+      README.md and CLAUDE.md command sections still say `app.main:app`,
+      `requirements.txt`, `tests/` at repo root. Since commit 0d2650f the MVP
+      lives under `legacy/`. Commands only work if run from `legacy/`
+      (or with adjusted module paths).
+    resolution: "Update README + CLAUDE.md command sections once backend/ lands; interim: run from legacy/."
+    severity: low
+    status: open
+
+  - id: CONFLICT-002
+    summary: "MVP enums vs spec enums"
+    detail: >
+      legacy/ uses size={trickle,steady,flowing,burst,unknown},
+      status includes repaired/private_owner; spec uses
+      severity={major,minor}, status resolved/closed_private. Any
+      migration or comparison must map through docs/spec-vs-mvp.md's
+      naming table — the vocabularies are NOT compatible.
+    resolution: "spec-vs-mvp.md is the mapping authority"
+    severity: medium
+    status: standing (by design)
+
+  - id: CONFLICT-003
+    summary: "backend/ untracked during build"
+    detail: >
+      backend/ + backend/node_modules/ exist on disk but are untracked;
+      node_modules is gitignored. Nothing about backend/ is committed yet —
+      a clean checkout does not contain it.
+    resolution: "expected to resolve when the build agent commits M1+ work"
+    severity: low
+    status: transient
