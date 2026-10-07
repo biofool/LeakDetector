@@ -1,0 +1,88 @@
+<!-- AI coding config version: 2026-07-25 — sourced from biofool/starter template.
+     Shared settings across all biofool projects; see ~/.codeium/windsurf/memories/shared_template_config.md -->
+
+# CLAUDE.md
+
+This file provides guidance to Claude Code when working in this repository.
+
+## Project Overview
+
+<!-- What this project is, who it's for, and the problem it solves. -->
+
+## Environment
+
+<!-- Shell (Git Bash / PowerShell / zsh), OS, path conventions, required tools. -->
+
+## Commands
+
+<!-- Install, run, test, lint. Keep this in sync with reality — it's the first
+     thing Claude reads before touching the repo. -->
+
+## Architecture
+
+<!-- Key modules/directories and how data flows between them. -->
+
+## Conventions
+
+<!-- Anything non-obvious from reading the code: naming, error handling
+     patterns, things that look like bugs but aren't. -->
+
+## Global conventions (apply to every project)
+
+The canonical home for cross-project rules is `AGENTS.md` (read by Devin).
+The items below are mirrored here so Claude Code applies them too. If you
+edit one, edit both.
+
+- **Validation requests — do not change code.** When asked to validate or
+  check a conclusion, investigate and report only. Do not start editing code
+  unless the user explicitly asks for a fix or implementation.
+- **Never read secrets files.** Do not read, cat, or print `.env`,
+  `.env.secrets`, `*.key`, `credentials*.json`, `service-account*.json`, or
+  any file containing API keys, tokens, or passwords. Ask the user to
+  provide credentials directly or via environment variables.
+- **Never commit or log secrets.** Keep `.gitignore` entries for `.env`,
+  `*.key`, `*.pem`, `credentials.json`, `cookies.txt`. Treat
+  infrastructure-touching scripts as production-sensitive; prefer dry-run
+  flags.
+- **API cost comparisons — be accurate and specific.** Verify pricing from
+  official sources, distinguish per-call vs. subscription vs. tiered, compute
+  break-even volume, separate marginal from total cost, account for free
+  tiers, double-check arithmetic, state all assumptions.
+- **Never fail silently.** Every exception or unavailable dependency must be
+  logged at WARNING or ERROR with a specific message. No bare
+  `except: pass` / `except: return`.
+- **No backslash line continuations in shell commands shown to the user.**
+  Long `gcloud`/`terraform`/`gsutil`/`kubectl` commands stay on one line.
+- **One-off fix scripts** go in `scripts/fix/`, support `--dry-run`, write
+  audit JSON to `data/audit/` (or `audit/`), and support `--limit`/`--offset`.
+- **Prefer stored data files over hardcoding.** Never hardcode arrays or
+  lookup tables with more than 15 items in source — read from a
+  version-controlled JSON/YAML/TOML file instead.
+- **Cross-repo coordination.** If this project is part of a paired repo
+  system (e.g. frontend + backend with a shared auth flow), document the
+  sister repo in `AGENTS.md` and require both PRDs + both repos to be
+  updated and deployed together for shared-flow changes.
+- **Cloud strategy — CloudManagement coordination.** CloudManagement
+  (`biofool/CloudManagement`) is the canonical source for cloud strategy.
+  When this repo adds/changes a cloud resource, data store, job placement,
+  or paid API, update CloudManagement's inventory (`config/accounts.yaml`),
+  PRD (`docs/PRD.md`), and this template's cloud-strategy section. Repos
+  with paid APIs vendor the `cloud_management_client` (stdlib-only) and
+  declare intent before API calls, report actuals after. Every report
+  includes an `application` field (human-readable product name, e.g.
+  `"OSenseiArchiver"`) distinct from `source_repo` (the GitHub repo).
+  The client is best-effort (no-op without env vars, never breaks the
+  host app). Long-running cloud jobs can also push `heartbeat` /
+  `daily_report` operational reports (`client.submit_report`) — the hub
+  emails them daily to `pipeline_report_email` and restarts stale
+  reporter VMs via `keepalive:` config (issue #86). See `AGENTS.md` for
+  the full section and
+  `~/projects/CloudManagement/docs/per-repo-api-specs.md` for per-repo specs.
+- **JEV bounded decisions.** `typesafe/jev-1.13` via OpenRouter Decisions is
+  available for bounded classification/scoring/routing/verification, not
+  generation. New uses start off/shadow-only with existing fallbacks and a
+  labeled calibration set. Enabled calls report `openrouter` / `decisions` to
+  CloudManagement; verify current pricing first. Security/routing/kill uses
+  require explicit approval and JEV is never the sole kill authority.
+
+See `AGENTS.md` for the full text of each rule.

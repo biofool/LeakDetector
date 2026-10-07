@@ -1,0 +1,44 @@
+# Unknowns Register
+
+unknowns:
+  - id: UNKNOWN-001
+    summary: "Exact list of downstream repos currently synced to this template"
+    classification: UNKNOWN
+    what_would_verify: "Check each known biofool repo's AGENTS.md version stamp against template's latest"
+    evidence_gap: "README.md and shared_template_config.mdc list known projects but don't confirm sync status"
+    related_claims:
+      - "shared_template_config.mdc lists: AIRichardMoon, quantumaikido.com, WorldStudioFinder, scraper-intl-dev, studio-discovery-dev, Security, ghostty, FieldWorker, ClipQuotes, neurowellnessdojo.com, CloudManagement, AikiField.com"
+
+  - id: UNKNOWN-002
+    summary: "Whether .devin/config.local.json.example exists"
+    classification: UNKNOWN
+    what_would_verify: "ls .devin/config.local.json.example — file not found in current checkout"
+    evidence_gap: "README.md line 66-68 references this file but it does not exist in the repo"
+    related_claims:
+      - "README.md line 66: 'cp .devin/config.local.json.example .devin/config.local.json'"
+
+  - id: UNKNOWN-003
+    summary: "Whether any automated sync mechanism exists beyond manual curl+merge"
+    classification: UNKNOWN
+    what_would_verify: "Search for scripts, GitHub Actions, or tools that automate template-to-downstream sync"
+    evidence_gap: "No automation found in this repo; external tooling not analyzed"
+    related_claims:
+      - "README.md lines 63-68 describe manual curl + merge process"
+      - "shared_template_config.mdc §Syncing describes manual process"
+
+  - id: UNKNOWN-004
+    summary: "Whether the search/ skill directory is intentionally an alias of bx/ or a copy error"
+    classification: UNKNOWN
+    what_would_verify: "Check git history for when search/ was added and whether it was intentional"
+    evidence_gap: "Both SKILL.md files have identical frontmatter (name: bx) and same line count"
+    related_claims:
+      - "AGENTS.md line 203 lists 'search' as a separate skill alongside 'bx'"
+
+  - id: UNKNOWN-005
+    summary: "Whether .devin/config.local.json (gitignored) ships a default version in the template"
+    classification: UNKNOWN
+    what_would_verify: "Check if a non-gitignored default config exists or if README's 'shipped version' refers to the gitignored file"
+    evidence_gap: "README.md line 69 says 'the shipped version is a starting point' but the file is gitignored and not present"
+    related_claims:
+      - "README.md line 69: 'the shipped version is a starting point'"
+      - ".gitignore line 7: .devin/config.local.json is gitignored"
