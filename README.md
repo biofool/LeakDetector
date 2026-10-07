@@ -1,12 +1,38 @@
 # LeakDetector
 
-Detects leaked credentials and secrets — API keys, tokens, private keys,
-passwords — in git working trees, committed history, and config files.
+Citizen water-leak reporting for NZ councils — mobile-first web form,
+duplicate detection, SLA timers, duty-officer alerts, public status map.
+Modelled on FixMyStreet / SeeClickFix / MAWC Citizen Leak Reporter.
 
-## Status
+## Quick start
 
-Scaffolded from [biofool/starter](https://github.com/biofool/starter).
-Implementation not started yet.
+```bash
+pip3 install -r requirements.txt
+STAFF_TOKEN=devtoken uvicorn app.main:app --host 0.0.0.0 --port 8080
+```
+
+Report form: http://127.0.0.1:8080/ — public map: http://127.0.0.1:8080/map.html — API docs: http://127.0.0.1:8080/docs
+
+Config via env vars — see `.env.example`. Optional council-zone assignment:
+drop a GeoJSON FeatureCollection of maintenance zones at
+`data/council_zones.geojson` (each feature needs a `name` or `zone` property).
+
+## API
+
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| `POST /api/reports` | public | Submit a leak (multipart: lat/lon/category/size/desc/contact/photos≤3) |
+| `GET /api/reports?status=` | public | List reports (contact stripped) |
+| `GET /api/reports/nearby?lat&lon&radius` | public | Duplicate check (default 30 m) |
+| `POST /api/reports/{id}/confirm` | public | "Same leak" — bumps confirmations |
+| `PATCH /api/reports/{id}?status=` | `X-Staff-Token` | Advance status (received → investigating → contractor_assigned → repaired / private_owner / duplicate / rejected) |
+| `GET /api/stats` | public | Totals, per-status, per-zone, median repair time |
+
+## Stack & layout
+
+FastAPI + SQLite (stdlib `sqlite3`, swappable for PostGIS) + no-build
+Leaflet frontend. `app/` backend, `static/` web, `tests/` pytest,
+`data/` runtime state (gitignored except `.gitkeep`).
 
 ## What's included from the template
 

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leak map — LeakDetector</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>💧 Leak map</h1>
+  <a href="index.html">Report a leak →</a>
+</header>
+<main style="max-width:900px">
+  <div class="card">
+    <div class="filters" id="filters"></div>
+    <div id="bigmap"></div>
+  </div>
+  <div class="card" id="stats"></div>
+  <div class="card"><label>Latest reports</label><div id="list"></div></div>
+</main>
+<footer>LeakDetector — community water-loss reporting.</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const COLOURS = {
+  received: "#2563eb", investigating: "#d97706", contractor_assigned: "#7c3aed",
+  repaired: "#16a34a", private_owner: "#64748b", duplicate: "#64748b", rejected: "#94a3b8",
+};
+const map = L.map("bigmap").setView([-41.3, 174.8], 5);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 19,
+}).addTo(map);
+const focus = new URLSearchParams(location.search).get("focus");
+let all = [], statusFilter = null;
+
+async function load() {
+  const [reports, stats] = await Promise.all([
+    fetch("/api/reports?limit=2000").then((r) => r.json()),
+    fetch("/api/stats").then((r) => r.json()),
+  ]);
+  all = reports;
+  renderFilters();
+  render();
+  const s = document.getElementById("stats");
+  s.innerHTML = `<label>Totals</label> ${stats.total} reports · ${stats.confirmations} confirmations ·
+    repaired median ${stats.median_repair_hours ?? "—"}h · ` +
+    Object.entries(stats.by_status).map(([k, v]) => `<span class="badge b-${k}">${k.replace("_"," ")}: ${v}</span>`).join(" ");
+  if (focus) {
+    const r = all.find((x) => x.id === focus);
+    if (r) map.setView([r.lat, r.lon], 17);
+  }
+}
+
+function renderFilters() {
+  const f = document.getElementById("filters");
+  const statuses = [...new Set(all.map((r) => r.status))];
+  f.innerHTML = `<button class="chip ${!statusFilter ? "sel" : ""}" onclick="setF(null)">All</button>` +
+    statuses.map((s) => `<button class="chip ${statusFilter === s ? "sel" : ""}" onclick="setF('${s}')">${s.replace("_"," ")}</button>`).join("");
+}
+window.setF = (s) => { statusFilter = s; renderFilters(); render(); };
+
+let layer = L.layerGroup().addTo(map);
+function render() {
+  layer.clearLayers();
+  const shown = all.filter((r) => !statusFilter || r.status === statusFilter);
+  for (const r of shown) {
+    L.circleMarker([r.lat, r.lon], {
+      radius: 8, color: COLOURS[r.status] || "#333", fillOpacity: 0.7, weight: 2,
+    })
+      .addTo(layer)
+      .bindPopup(`<b>${r.category}</b> · ${r.size}<br><span class="badge b-${r.status}">${r.status.replace("_"," ")}</span><br>
+        ${r.description || ""}<br><small>${new Date(r.created_at * 1000).toLocaleString()} · ${r.confirmations} confirmations</small>`);
+  }
+  document.getElementById("list").innerHTML = shown.slice(0, 50).map((r) =>
+    `<div class="report-item"><b>${r.category}</b> — ${r.size}
+     <span class="badge b-${r.status}">${r.status.replace("_"," ")}</span>
+     <div class="meta">${new Date(r.created_at * 1000).toLocaleString()} · ${r.council_zone || "unassigned"} · ${r.confirmations} confirmations</div></div>`
+  ).join("") || '<div class="meta">No reports yet.</div>';
+}
+load();
+</script>
+</body>
+</html>

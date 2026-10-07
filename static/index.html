@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report a water leak — LeakDetector</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>💧 Report a water leak</h1>
+  <a href="map.html">Public map →</a>
+</header>
+<main>
+  <div class="card">
+    <label>1. Where is the leak?</label>
+    <div id="map"></div>
+    <div class="hint">Tap the map to drop the pin, or <button class="link" id="locate" type="button">use my location</button>. Drag the pin to fine-tune.</div>
+  </div>
+
+  <div class="card" id="dups" hidden>
+    <label>Possible duplicates nearby</label>
+    <div id="dup-list"></div>
+    <div class="hint">If one of these is the same leak, tap "same leak" instead of submitting — it still counts.</div>
+  </div>
+
+  <form id="form" class="card">
+    <label>2. What kind of spot?</label>
+    <div class="chips" id="cats">
+      <button type="button" class="chip" data-v="footpath">Footpath</button>
+      <button type="button" class="chip" data-v="berm">Berm / grass verge</button>
+      <button type="button" class="chip" data-v="road">Road</button>
+      <button type="button" class="chip" data-v="meter">Water meter / toby</button>
+      <button type="button" class="chip" data-v="outside_tap">Outside tap</button>
+      <button type="button" class="chip" data-v="other">Other</button>
+    </div>
+
+    <label>3. How much water? <span class="hint">guess is fine</span></label>
+    <div class="chips" id="sizes">
+      <button type="button" class="chip" data-v="trickle">Trickle</button>
+      <button type="button" class="chip" data-v="steady">Steady stream</button>
+      <button type="button" class="chip" data-v="flowing">Flowing</button>
+      <button type="button" class="chip" data-v="burst">Burst / flooding</button>
+    </div>
+
+    <label for="photo">4. Photo <span class="hint">helps crews verify fast</span></label>
+    <input type="file" id="photo" accept="image/*" capture="environment" multiple>
+
+    <label for="desc">5. Anything else? <span class="hint">optional</span></label>
+    <textarea id="desc" maxlength="2000" placeholder="e.g. water bubbling up near the kerb outside 42 Tawa St"></textarea>
+
+    <label for="contact">6. Email or phone <span class="hint">optional — for status updates</span></label>
+    <input type="text" id="contact" placeholder="you@example.nz">
+
+    <button class="primary" id="submit" type="submit" disabled>Drop a pin on the map first</button>
+    <div id="msg"></div>
+  </form>
+</main>
+<footer>LeakDetector — community water-loss reporting. Reports are public; contact details are not shown.</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="report.js"></script>
+</body>
+</html>

@@ -80,3 +80,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+
+# LeakDetector runtime data
+data/leakdetector.sqlite*
+data/uploads/
+data/audit/

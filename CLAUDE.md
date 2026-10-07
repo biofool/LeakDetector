@@ -7,10 +7,12 @@ This file provides guidance to Claude Code when working in this repository.
 
 ## Project Overview
 
-LeakDetector scans git repositories — working trees, committed history, and
-config files — for leaked credentials and secrets (API keys, tokens, private
-keys, passwords). For anyone who wants to find exposed secrets before an
-attacker or a CI secret-scan does.
+LeakDetector is a citizen water-leak reporting app for NZ councils — a
+mobile-first web form where residents drop a pin, snap a photo, and report
+leaks (footpath/berm/road/meter/outside tap) in under 30 seconds, with
+duplicate detection, SLA timers, duty-officer email alerts, and a public
+status map. Modelled on FixMyStreet / SeeClickFix / MAWC Citizen Leak
+Reporter patterns.
 
 ## Environment
 
@@ -18,12 +20,23 @@ Linux (Ubuntu), bash. `gh` CLI authenticated as `biofool`.
 
 ## Commands
 
-<!-- Install, run, test, lint. Keep this in sync with reality — it's the first
-     thing Claude reads before touching the repo. -->
+- Install: `pip3 install -r requirements.txt`
+- Run dev server: `STAFF_TOKEN=devtoken uvicorn app.main:app --host 0.0.0.0 --port 8080`
+- Test: `python3 -m pytest tests/ -q`
+- Report form: http://127.0.0.1:8080/ · Public map: http://127.0.0.1:8080/map.html · API docs: http://127.0.0.1:8080/docs
 
 ## Architecture
 
-<!-- Key modules/directories and how data flows between them. -->
+`app/` is a FastAPI backend; `static/` is a no-build frontend (Leaflet +
+OSM via CDN) served by the same process. SQLite via stdlib `sqlite3` in
+`app/db.py` — all queries go through that module so Postgres/PostGIS is a
+drop-in upgrade later. Photos land in `data/uploads/`; council zone
+assignment is point-in-polygon against `data/council_zones.geojson`
+(optional, absent = unassigned). `app/notify.py` emails the duty officer
+via SMTP env config, always audit-logs to `data/audit/notifications.log`,
+and warns rather than fails when unconfigured. Staff endpoints are gated
+by `STAFF_TOKEN` (header `X-Staff-Token`); reporter endpoints are public
+and strip contact details from responses.
 
 ## Conventions
 
