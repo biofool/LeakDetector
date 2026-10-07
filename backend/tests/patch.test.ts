@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { pool } from '../src/db.js';
+import { tinyPng } from './helpers.js';
 
 const app = createApp();
 afterAll(() => pool.end());
@@ -85,6 +86,45 @@ describe('PATCH /api/v1/reports/:id', () => {
       .send({ is_duplicate_of: b.id }); // b is itself a duplicate → chain
     expect(chain.status).toBe(422);
     expect(chain.body.error.code).toBe('invalid_duplicate_target');
+  });
+
+  it('does not re-notify when resolved is PATCHed twice', async () => {
+    const token = await staffToken();
+    const create = await request(app)
+      .post('/api/v1/reports')
+      .field('category', 'road').field('severity', 'minor')
+      .field('lat', String(SPOT.lat)).field('lng', String(SPOT.lng))
+      .field('reporter_contact', 'repeat@example.nz');
+    const id = create.body.id;
+    await request(app).patch(`/api/v1/reports/${id}`).set('Authorization', `Bearer ${token}`).send({ status: 'resolved' });
+    // second PATCH with another field — must not queue a second notification
+    await request(app).patch(`/api/v1/reports/${id}`).set('Authorization', `Bearer ${token}`).send({ status: 'resolved', public_note: 'still done' });
+    const { rows } = await pool.query(
+      `SELECT count(*) AS n FROM notification_outbox WHERE report_id = $1 AND template = 'reporter_resolved'`,
+      [id],
+    );
+    expect(Number(rows[0].n)).toBe(1);
+  });
+
+  it('staff can hide a photo; public view omits it', async () => {
+    const token = await staffToken();
+    const create = await request(app)
+      .post('/api/v1/reports')
+      .field('category', 'berm').field('severity', 'minor')
+      .field('lat', String(SPOT.lat)).field('lng', String(SPOT.lng))
+      .attach('photos', tinyPng(), { filename: 'face.png', contentType: 'image/png' });
+    const got = await request(app)
+      .get(`/api/v1/reports/${create.body.id}`)
+      .set('Authorization', `Bearer ${token}`);
+    const photoId = got.body.photos[0].id;
+    const hide = await request(app)
+      .patch(`/api/v1/reports/${create.body.id}/photos/${photoId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ is_hidden: true });
+    expect(hide.status).toBe(200);
+    expect(hide.body.is_hidden).toBe(true);
+    const pub = await request(app).get(`/api/v1/reports/${create.body.id}`);
+    expect(pub.body.photos).toHaveLength(0);
   });
 
   it('recalculates SLA when severity changes', async () => {

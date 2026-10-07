@@ -15,6 +15,11 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+// Real argon2 hash computed at startup — verifying unknown emails against it
+// costs the same as a real check, so response time doesn't reveal whether
+// the account exists.
+const DUMMY_HASH = argon2.hash('not-a-real-password');
+
 router.post(
   '/login',
   rateLimit('login', 10, 15 * 60 * 1000),
@@ -27,8 +32,8 @@ router.post(
         [email],
       );
       const user = rows[0];
-      // Verify against a dummy hash too, so unknown emails cost the same.
-      const hash = user?.password_hash ?? '$argon2id$v=19$m=65536,t=3,p=4$AAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+      // Verify against a real dummy hash so unknown emails cost the same.
+      const hash = user?.password_hash ?? (await DUMMY_HASH);
       const ok = await argon2.verify(hash, password).catch(() => false);
       if (!user || !ok) throw new ApiError(401, 'bad_credentials', 'invalid email or password');
 

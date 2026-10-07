@@ -12,6 +12,7 @@ export default function ReportStatusPage() {
   const [report, setReport] = useState<Report | null>(null);
   const [err, setErr] = useState('');
   const [confirmed, setConfirmed] = useState(false);
+  const [confirmErr, setConfirmErr] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -71,12 +72,13 @@ export default function ReportStatusPage() {
 
       {open && !confirmed && (
         <button
-          onClick={() => confirmReport(report.id).then(() => setConfirmed(true))}
+          onClick={() => confirmReport(report.id).then(() => setConfirmed(true)).catch(() => setConfirmErr('Could not record that — try again'))}
           className="mt-4 w-full rounded-xl border border-cyan-700 bg-white px-4 py-3 font-medium text-cyan-800"
         >
           I’ve seen this leak too
         </button>
       )}
+      {confirmErr && <p className="mt-2 text-center text-sm text-red-600">{confirmErr}</p>}
       {confirmed && <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-center text-sm text-emerald-800">Thanks — noted.</p>}
       {report.status === 'resolved' && (
         <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-center text-sm font-medium text-emerald-800">

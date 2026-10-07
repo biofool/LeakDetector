@@ -3,6 +3,9 @@ import { afterAll, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { pool } from '../src/db.js';
+import { tinyPng } from './helpers.js';
+
+const PNG = tinyPng();
 
 const app = createApp();
 afterAll(() => pool.end());
@@ -80,5 +83,40 @@ describe('POST /api/v1/reports', () => {
     expect(pub.status).toBe(200);
     expect(pub.body.reporter_contact).toBeUndefined();
     expect(pub.body.sla_status).toBe('on_track');
+  });
+
+  it('accepts a real photo and returns absolute webp URLs', async () => {
+    const res = await request(app)
+      .post('/api/v1/reports')
+      .field('category', 'berm').field('severity', 'minor')
+      .field('lat', '-41.29').field('lng', '174.78')
+      .attach('photos', PNG, { filename: 'leak.png', contentType: 'image/png' });
+    expect(res.status).toBe(201);
+    const got = await request(app).get(`/api/v1/reports/${res.body.id}`);
+    expect(got.body.photos).toHaveLength(1);
+    expect(got.body.photos[0].url).toMatch(/^https?:\/\/.+\.webp$/);
+    expect(got.body.photos[0].thumb_url).toMatch(/_t\.webp$/);
+  });
+
+  it('rejects a non-image file labelled as jpeg with 415', async () => {
+    const res = await request(app)
+      .post('/api/v1/reports')
+      .field('category', 'berm').field('severity', 'minor')
+      .field('lat', '-41.29').field('lng', '174.78')
+      .attach('photos', Buffer.from('not an image'), { filename: 'x.jpg', contentType: 'image/jpeg' });
+    expect(res.status).toBe(415);
+    expect(res.body.error.code).toBe('unsupported_type');
+  });
+
+  it('returns 400 for bad list params, geojson for format=geojson', async () => {
+    for (const qs of ['limit=abc', 'page=-1', 'council_zone_id=x', 'sort=wrong', 'sla=wrong', 'updated_since=banana']) {
+      const res = await request(app).get(`/api/v1/reports?${qs}`);
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('validation_failed');
+    }
+    const geo = await request(app).get('/api/v1/reports?format=geojson');
+    expect(geo.status).toBe(200);
+    expect(geo.body.type).toBe('FeatureCollection');
+    expect(Array.isArray(geo.body.features)).toBe(true);
   });
 });

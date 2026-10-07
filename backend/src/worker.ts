@@ -32,6 +32,9 @@ const TEMPLATES: Record<string, (p: Record<string, unknown>) => { subject: strin
   }),
 };
 
+// NOTE: row locks are held while sends are in flight (correctness — a second
+// worker can't double-send the same row). Bounded to 20 rows per cycle;
+// revisit if multiple workers run at scale (e.g. a claimed_at column).
 async function drainOutbox(): Promise<void> {
   const client = await pool.connect();
   try {
@@ -46,6 +49,15 @@ async function drainOutbox(): Promise<void> {
       ch === 'email' ? !config.postmark.token : !(config.twilio.sid && config.twilio.token);
     let deferred = 0;
     for (const row of rows) {
+      // Unknown template is a permanent failure — mark failed, never defer.
+      if (!TEMPLATES[row.template]) {
+        await client.query(
+          `UPDATE notification_outbox SET status = 'failed', last_error = $1 WHERE id = $2`,
+          [`unknown template ${row.template}`, row.id],
+        );
+        console.error(`[worker] outbox ${row.id} failed permanently: unknown template ${row.template}`);
+        continue;
+      }
       // Missing provider config is not a delivery failure — don't burn
       // attempts; defer and leave the row pending (see .env.example).
       if (providerMissing(row.channel)) {
@@ -56,9 +68,8 @@ async function drainOutbox(): Promise<void> {
         deferred++;
         continue;
       }
-      const msg = TEMPLATES[row.template]?.(row.payload ?? {});
+      const msg = TEMPLATES[row.template](row.payload ?? {});
       try {
-        if (!msg) throw new Error(`unknown template ${row.template}`);
         await send(row.channel, row.recipient, msg.subject, msg.text);
         await client.query(
           `UPDATE notification_outbox SET status = 'sent', sent_at = now() WHERE id = $1`,

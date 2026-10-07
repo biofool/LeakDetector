@@ -28,6 +28,23 @@ separate `leakdetector_test` database, created fresh each run):
 DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5433/leakdetector npm test
 ```
 
+## Production scripts
+
+`npm run build` compiles to `dist/src/` and `dist/scripts/`. On Railway use
+the `node dist` variants (tsx is dev-only): `npm start` (api), `npm run
+start:worker`, `npm run start:migrate` (pre-deploy), `npm run start:seed`.
+
+## Gotchas
+
+- `ST_MakePoint(lng, lat)` — longitude first (spec §2).
+- Distance queries must cast `geom::geography` or the index is missed.
+- No S3_* → photos land in `data/uploads/` on local disk (ephemeral on Railway).
+- `DISABLE_RATE_LIMIT=1` disables the limiter (used by tests only).
+- Photos: jpeg/png/webp only. heic is spec'd but unsupported — the stock
+  sharp build has no libheif → `415`.
+- `API_PUBLIC_URL` must point at this api's public origin — photo URLs are
+  built absolute because the PWA is usually on a different origin.
+
 ## Endpoints (`/api/v1`)
 
 | Endpoint | Auth | Purpose |
@@ -38,6 +55,7 @@ DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5433/leakdetector npm test
 | `GET /reports/:id` | public | single report (staff token adds private fields) |
 | `POST /reports/:id/confirm` | public | "I've seen it too" |
 | `PATCH /reports/:id` | staff JWT | status/verify/duplicate/severity/note |
+| `PATCH /reports/:id/photos/:photoId` | staff JWT | hide/unhide a photo (`is_hidden`) |
 | `GET /reports` | public/staff | filters: status, category, severity, zone, sla, bbox, updated_since, geojson |
 
 ## Layout
@@ -46,10 +64,3 @@ DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5433/leakdetector npm test
 `app.ts`/`index.ts` express app + listen · `worker.ts` outbox/SLA ·
 `routes/` auth + reports · `services/` sla, zones, duplicates, photos, outbox ·
 `middleware/` staffAuth (JWT), rateLimit, errors · `util/` ref + serialize.
-
-## Gotchas
-
-- `ST_MakePoint(lng, lat)` — longitude first (spec §2).
-- Distance queries must cast `geom::geography` or the index is missed.
-- No S3_* → photos land in `data/uploads/` on local disk (ephemeral on Railway).
-- `DISABLE_RATE_LIMIT=1` disables the limiter (used by tests only).

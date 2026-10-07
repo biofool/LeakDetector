@@ -55,11 +55,13 @@ One Railway project; services `api`, `worker`, `web` + a Postgres plugin with
 PostGIS enabled (`CREATE EXTENSION postgis` — run once, or let `npm run migrate`
 do it; `001_init.sql` includes it).
 
-- `api` — root dir `backend/`, pre-deploy `npm run migrate`, start `npm start`.
-- `worker` — root dir `backend/`, start `npm run worker`.
+- `api` — root dir `backend/`, build `npm run build`, pre-deploy
+  `npm run start:migrate`, start `npm start`.
+- `worker` — root dir `backend/`, build `npm run build`, start `npm run start:worker`.
 - `web` — root dir `frontend/`, build `npm run build`, serve `dist/`
   (static). Set `VITE_API_BASE_URL` at build time.
 - Env vars per service: `DATABASE_URL`, `JWT_SECRET`, `PUBLIC_BASE_URL`,
+  `API_PUBLIC_URL` (this api's own public origin — photo URLs are absolute),
   `POSTMARK_*`/`TWILIO_*` for delivery, `S3_*` for photo storage
   (no bucket → local disk, which does not survive redeploys).
 

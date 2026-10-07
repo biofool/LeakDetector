@@ -208,3 +208,4 @@ the text.
     - `docker-compose.yml` at the root for local PostGIS + MinIO.
 - **Why:** An AI implementer works best with explicit file paths, a fixed library list, small tasks, and a test for "done". Rule 1 in §6.1 ("do not invent") stops it filling gaps with guesses.
 - **Open:** What happens to the current FastAPI MVP in `app/` and `static/` — see [`spec-vs-mvp.md`](spec-vs-mvp.md#open-decisions).
+

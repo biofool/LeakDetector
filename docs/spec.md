@@ -620,3 +620,34 @@ Local setup: `docker compose up -d` → `cd backend && cp .env.example .env && n
 | M9 | Frontend: Track page and public map | Map shows open + 7-day resolved reports; no personal data in network responses |
 | M10 | Frontend: staff dashboard | Sorted by `sla_due_at`; 30 s polling; SLA and "Possible duplicate" badges; PATCH actions |
 | M11 | Railway deploy (staging then production) | Pre-deploy migration runs; a real report on staging produces a real email |
+
+---
+
+### 6.7 As-built deltas (what was actually implemented)
+
+The implementation followed the §6.2 layout and every behavioural rule, but
+the build prompt specified **TypeScript + ESM** for the backend, which wins
+over the §6.2 CommonJS note. Recorded deltas:
+
+| Spec §6 | As built |
+|---|---|
+| Backend JavaScript (CommonJS) | Backend **TypeScript, ESM** (`tsx` dev, `tsc` build → `dist/src`) |
+| `node-pg-migrate` | `src/migrate.ts` — applies `migrations/*.sql` with a `schema_migrations` ledger; `npm run migrate` / `start:migrate` |
+| `express-rate-limit` | `middleware/rateLimit.ts` — in-memory fixed window, per-route buckets |
+| `pino`, `pino-http`, `helmet` | `console.*` logging + request-log middleware; no helmet yet (API-only) |
+| `postmark`/`twilio` SDKs | `services/outbox.ts` calls their REST APIs via `fetch` — zero extra deps |
+| `docker-compose.yml` + MinIO | Docker `postgis/postgis` container; photos fall back to local `data/uploads` when `S3_*` unset |
+| `test/` + vitest | `tests/` + **Jest** + supertest |
+| `constants.js`, `serializers.js`, `server.js` | `types.ts`, `util/serialize.ts` (`toReport(row, photos, staff)`), `index.ts` |
+| `/staff/login`, `/staff/reports/:id` | `/staff` only — inline login + expandable rows |
+| `react-leaflet`, `@tanstack/react-query`, `browser-image-compression` | Plain `leaflet` wrapper (divIcon), manual 30 s polling, server-side sharp only |
+| `EMAIL_FROM`, `CORS_ORIGIN`, `VITE_BASEMAP_URL` | `POSTMARK_FROM`; `cors()` open for now; OSM tiles in dev (LINZ noted for prod). Added `API_PUBLIC_URL` for absolute photo URLs |
+
+Additions beyond §3 that were required by review: `PATCH
+/reports/:id/photos/:photoId` (staff photo moderation, completes D-07) and
+`GET /healthz`.
+
+Notes:
+- Photos accept jpeg/png/webp. heic is in §3 but the stock `sharp` build has
+  no libheif — the API returns `415` until a council asks for it.
+- `DISABLE_RATE_LIMIT=1` exists for the test suite only.

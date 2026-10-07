@@ -4,6 +4,13 @@ import type { Request, Response, NextFunction } from 'express';
 
 const buckets = new Map<string, { count: number; reset: number }>();
 
+// Evict expired entries so the map can't grow without bound.
+const sweep = setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of buckets) if (v.reset <= now) buckets.delete(k);
+}, 60_000);
+sweep.unref();
+
 export function rateLimit(bucket: string, limit: number, windowMs: number) {
   if (process.env.DISABLE_RATE_LIMIT) {
     return (_req: Request, _res: Response, next: NextFunction) => next();

@@ -17,6 +17,7 @@ interface Props {
   markers?: MapMarker[];
   pin?: [number, number] | null;
   onPinMove?: (lat: number, lng: number) => void;
+  onPick?: (lat: number, lng: number) => void;
   onMarkerClick?: (index: number) => void;
   className?: string;
 }
@@ -29,11 +30,13 @@ const dot = (colour: string) =>
     iconAnchor: [8, 8],
   });
 
-export default function LeafletMap({ centre, zoom = 17, markers = [], pin, onPinMove, onMarkerClick, className }: Props) {
+export default function LeafletMap({ centre, zoom = 17, markers = [], pin, onPinMove, onPick, onMarkerClick, className }: Props) {
   const divRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const pinRef = useRef<L.Marker | null>(null);
   const marksRef = useRef<L.Marker[]>([]);
+  const onPickRef = useRef(onPick);
+  onPickRef.current = onPick;
 
   useEffect(() => {
     if (!divRef.current || mapRef.current) return;
@@ -43,6 +46,7 @@ export default function LeafletMap({ centre, zoom = 17, markers = [], pin, onPin
       attribution: '© OpenStreetMap contributors',
     }).addTo(map);
     mapRef.current = map;
+    map.on('click', (e: L.LeafletMouseEvent) => onPickRef.current?.(e.latlng.lat, e.latlng.lng));
     return () => { map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

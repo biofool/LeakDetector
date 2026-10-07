@@ -119,12 +119,13 @@ export default function LeakReportForm() {
       {/* Step 1 — locate */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="font-semibold text-slate-900">1. Where is the leak?</h2>
-        <p className="mt-1 text-sm text-slate-500">Drag the pin to the exact spot.</p>
+        <p className="mt-1 text-sm text-slate-500">Tap the map to drop a pin, then drag it to the exact spot.</p>
         <div className="mt-3">
           <LeafletMap
             centre={pin ?? NZ_CENTRE}
             pin={pin}
             onPinMove={(lat, lng) => { setPin([lat, lng]); setAccuracy(undefined); }}
+            onPick={(lat, lng) => { setPin([lat, lng]); setAccuracy(undefined); }}
           />
         </div>
         <button
@@ -133,7 +134,7 @@ export default function LeakReportForm() {
           onClick={checkNearby}
           className="mt-3 w-full rounded-lg bg-cyan-700 px-4 py-2.5 font-medium text-white disabled:opacity-40"
         >
-          {checking ? 'Checking nearby reports…' : pin ? 'Confirm this spot' : 'Waiting for location…'}
+          {checking ? 'Checking nearby reports…' : pin ? 'Confirm this spot' : 'Tap the map to drop a pin'}
         </button>
       </section>
 

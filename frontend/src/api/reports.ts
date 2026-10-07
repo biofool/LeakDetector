@@ -125,6 +125,12 @@ export interface PatchBody {
 export const patchReport = (id: number | string, patch: PatchBody, token: string) =>
   req<Report>(`/reports/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }, token);
 
+export const patchPhotoHidden = (reportId: number | string, photoId: number | string, hidden: boolean, token: string) =>
+  req<{ id: number; is_hidden: boolean }>(`/reports/${reportId}/photos/${photoId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ is_hidden: hidden }),
+  }, token);
+
 export interface StaffSession {
   token: string;
   user: { id: string; display_name: string; role: string; council_id: number | null };

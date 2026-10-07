@@ -1,8 +1,8 @@
 // frontend/src/pages/DashboardPage.tsx — staff dashboard (/staff).
 // Login → list sorted by sla_due_at, polled every 30 s; inline PATCH actions.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { login, session, listReports, patchReport } from '../api/reports.js';
+import { login, session, listReports, patchReport, patchPhotoHidden, getReport, ApiError } from '../api/reports.js';
 import type { Report, StaffSession, Status } from '../api/reports.js';
 import { StatusBadge, SlaBadge } from '../components/StatusBadge.js';
 import { LOCATION_LABELS, STATUS_LABELS, timeAgo } from '../util/format.js';
@@ -23,10 +23,20 @@ export default function DashboardPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [filter, setFilter] = useState<'open' | 'breached' | 'due_soon' | 'all'>('open');
   const [openId, setOpenId] = useState<number | null>(null);
+  const [detail, setDetail] = useState<Report | null>(null);
   const [note, setNote] = useState('');
   const [dupTarget, setDupTarget] = useState('');
   const [actionErr, setActionErr] = useState('');
-  const lastPoll = useRef<string | undefined>();
+
+  const toggle = (id: number) => {
+    setNote('');
+    setDupTarget('');
+    setDetail(null);
+    setOpenId(openId === id ? null : id);
+    if (openId !== id && sess) {
+      getReport(id, sess.token).then(setDetail).catch(() => {});
+    }
+  };
 
   const refresh = useCallback(async () => {
     if (!sess) return;
@@ -37,12 +47,14 @@ export default function DashboardPage() {
         : { sort: 'sla_due_at' as const, sla: filter };
       const r = await listReports({ ...params, limit: 200 }, sess.token);
       setReports(r.results);
-      lastPoll.current = new Date().toISOString();
-      if (r.results.length === 0 && sess) return;
-    } catch {
-      // expired token → back to login
-      session.clear();
-      setSess(null);
+    } catch (e) {
+      // Only an auth failure should sign staff out — transient errors keep the session.
+      if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
+        session.clear();
+        setSess(null);
+      } else {
+        setActionErr('Refresh failed — will retry in 30 s');
+      }
     }
   }, [sess, filter]);
 
@@ -126,16 +138,10 @@ export default function DashboardPage() {
       <ul className="space-y-2">
         {reports.map((r) => (
           <li key={r.id} className="rounded-xl border border-slate-200 bg-white">
-            <button className="w-full p-3 text-left" onClick={() => setOpenId(openId === r.id ? null : r.id)}>
+            <button className="w-full p-3 text-left" onClick={() => toggle(r.id)}>
               <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
-                  <Link
-                    to={`/r/${r.id}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="font-medium text-cyan-800 underline"
-                  >
-                    {r.ref}
-                  </Link>
+                  <span className="font-medium text-cyan-800">{r.ref}</span>
                   <span className="text-xs text-slate-500">
                     {LOCATION_LABELS[r.location_type]} · {r.severity}
                   </span>
@@ -159,11 +165,29 @@ export default function DashboardPage() {
 
             {openId === r.id && (
               <div className="space-y-3 border-t border-slate-100 p-3">
-                {r.description && <p className="text-sm text-slate-700">{r.description}</p>}
-                {r.reporter_contact && (
+                <div className="flex items-center justify-between">
+                  {r.description && <p className="text-sm text-slate-700">{r.description}</p>}
+                  <Link to={`/r/${r.id}`} className="shrink-0 text-xs text-cyan-700 underline">public page →</Link>
+                </div>
+                {detail?.reporter_contact && (
                   <p className="text-xs text-slate-500">
-                    Reporter: {r.reporter_name ?? '—'} · {r.reporter_contact}
+                    Reporter: {detail.reporter_name ?? '—'} · {detail.reporter_contact}
                   </p>
+                )}
+                {(detail?.photos.length ?? 0) > 0 && (
+                  <div className="flex gap-2 overflow-x-auto">
+                    {detail!.photos.map((p) => (
+                      <div key={p.id} className="shrink-0 text-center">
+                        <img src={p.thumb_url} alt="" className="h-16 w-16 rounded-lg object-cover" />
+                        <button
+                          onClick={() => sess && patchPhotoHidden(r.id, p.id, true, sess.token).then(refresh)}
+                          className="mt-1 text-[10px] text-red-600 underline"
+                        >
+                          hide
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
                 <div className="flex flex-wrap gap-2">
                   {NEXT[r.status].map((s) => (
@@ -184,7 +208,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex gap-2">
                   <input
-                    value={openId === r.id ? note : ''}
+                    value={note}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="Public note (e.g. crew booked Thursday)"
                     className="flex-1 rounded-lg border border-slate-300 p-2 text-xs"
@@ -198,7 +222,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex gap-2">
                   <input
-                    value={openId === r.id ? dupTarget : ''}
+                    value={dupTarget}
                     onChange={(e) => setDupTarget(e.target.value)}
                     placeholder="Duplicate of report id (e.g. 1042)"
                     inputMode="numeric"
