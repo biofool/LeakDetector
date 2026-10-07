@@ -4,7 +4,9 @@
 set -euo pipefail
 
 BASE="${BASE_URL:-http://127.0.0.1:8080}"
-PSQL="docker exec leakdetector-postgis psql -U postgres -d leakdetector -tAc"
+# PSQL_CMD overrides the DB probe for deployed environments, e.g.:
+#   PSQL_CMD="ssh -i ~/.ssh/id_ed25519 ubuntu@192.9.226.218 docker exec leakdetector-db psql -U postgres -d leakdetector -tAc"
+PSQL="${PSQL_CMD:-docker exec leakdetector-postgis psql -U postgres -d leakdetector -tAc}"
 OUT="/tmp/leakdetector-e2e"; mkdir -p "$OUT"
 
 pass() { echo "PASS  $*"; }
@@ -57,6 +59,11 @@ TOKEN=$(curl -sf -X POST "$BASE/api/v1/auth/login" \
   -d '{"email":"staff@example.govt.nz","password":"password123"}' | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != null ] || fail "staff login"
 pass "staff login"
+
+# staff list view must include nearby_open_count (issue #23 regression check)
+NEARBY=$(curl -sf "$BASE/api/v1/reports" -H "Authorization: Bearer $TOKEN" | jq -r '.results[0] | has("nearby_open_count")')
+[ "$NEARBY" = "true" ] || fail "staff list missing nearby_open_count"
+pass "staff list includes nearby_open_count"
 
 # --- workflow on the major report ---------------------------------------------
 ID=${IDS[major]}

@@ -465,7 +465,7 @@ router.get('/', optionalStaff, async (req, res, next) => {
         vals,
       ),
       query(
-        `${REPORT_SELECT}${extraCols} ${whereSql} ORDER BY ${orderBy} LIMIT $${vals.length + 1} OFFSET $${vals.length + 2}`,
+        `${REPORT_SELECT.replace('SELECT r.*,', `SELECT r.*${extraCols},`)} ${whereSql} ORDER BY ${orderBy} LIMIT $${vals.length + 1} OFFSET $${vals.length + 2}`,
         [...vals, limit, (page - 1) * limit],
       ),
     ]);

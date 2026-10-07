@@ -1,0 +1,12 @@
+# .htaccess for public_html/LeakDetector/ on peec.biz
+# API + photo uploads are proxied to the backend VM; everything else is the
+# static SPA with client-side routing fallback to index.html.
+RewriteEngine on
+RewriteBase /LeakDetector/
+
+RewriteRule ^api/(.*)$    api-proxy.php [L,QSA]
+RewriteRule ^uploads/(.*)$ api-proxy.php [L,QSA]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
