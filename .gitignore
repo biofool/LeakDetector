@@ -85,3 +85,5 @@ Thumbs.db
 data/leakdetector.sqlite*
 data/uploads/
 data/audit/
+*.tsbuildinfo
+logs/

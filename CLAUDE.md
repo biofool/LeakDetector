@@ -20,28 +20,26 @@ Linux (Ubuntu), bash. `gh` CLI authenticated as `biofool`.
 
 ## Commands
 
-- Install: `pip3 install -r requirements.txt`
-- Run dev server: `STAFF_TOKEN=devtoken uvicorn app.main:app --host 0.0.0.0 --port 8080`
-- Test: `python3 -m pytest tests/ -q`
-- Report form: http://127.0.0.1:8080/ · Public map: http://127.0.0.1:8080/map.html · API docs: http://127.0.0.1:8080/docs
+- Install: `cd backend && npm install` · `cd frontend && npm install`
+- Dev: `cd backend && npm run migrate && npm run seed && npm run dev`
+  (+ `npm run worker` for notifications); `cd frontend && npm run dev`
+- Backend test: `cd backend && npm test` (Jest + supertest, needs a live
+  PostGIS DB — `docker run -d -p 5433:5432 docker.io/postgis/postgis:16-3.5`)
+- Frontend test: `cd frontend && npm test` (Vitest)
+- PWA: http://127.0.0.1:5173/ · API: http://127.0.0.1:8080/api/v1
 
 ## Architecture
 
-`app/` is a FastAPI backend; `static/` is a no-build frontend (Leaflet +
-OSM via CDN) served by the same process. SQLite via stdlib `sqlite3` in
-`app/db.py` — all queries go through that module so Postgres/PostGIS is a
-drop-in upgrade later. Photos land in `data/uploads/`; council zone
-assignment is point-in-polygon against `data/council_zones.geojson`
-(optional, absent = unassigned). `app/notify.py` emails the duty officer
-via SMTP env config, always audit-logs to `data/audit/notifications.log`,
-and warns rather than fails when unconfigured. Staff endpoints are gated
-by `STAFF_TOKEN` (header `X-Staff-Token`); reporter endpoints are public
-and strip contact details from responses.
+Monorepo per `docs/spec.md`. `backend/` is Express + TypeScript +
+`pg` + PostGIS (migrations in `backend/migrations/`); `src/worker.ts` is a
+separate process draining `notification_outbox` and running the SLA sweep.
+`frontend/` is React + Vite + Tailwind PWA (routes `/`, `/map`, `/r/:id`,
+`/staff`). Staff auth is JWT via `POST /api/v1/auth/login` (argon2id
+hashes, 8 h tokens, council-scoped). `legacy/` holds the retired
+FastAPI + SQLite MVP — reference only, do not extend it.
 
-**Target design differs from this MVP.** `docs/spec.md` specifies a Node/Express
-+ PostGIS `/backend` and React/Vite/Tailwind `/frontend` monorepo (to be built
-by Windsurf SWE-2). `docs/decisions.md` records every deviation from the
-original brief (`docs/brief.md`); `docs/spec-vs-mvp.md` lists the gaps and open
+`docs/decisions.md` records every deviation from the original brief
+(`docs/brief.md`); `docs/spec-vs-mvp.md` lists the gaps and open
 decisions. Update these when the design or the code changes.
 
 ## Conventions

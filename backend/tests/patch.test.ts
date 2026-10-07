@@ -1,0 +1,101 @@
+// backend/tests/patch.test.ts — PATCH /reports/:id staff flow.
+import { afterAll, describe, expect, it } from '@jest/globals';
+import request from 'supertest';
+import { createApp } from '../src/app.js';
+import { pool } from '../src/db.js';
+
+const app = createApp();
+afterAll(() => pool.end());
+const SPOT = { lat: -41.28, lng: 174.77 };
+
+async function makeReport() {
+  const res = await request(app)
+    .post('/api/v1/reports')
+    .field('category', 'road').field('severity', 'minor')
+    .field('lat', String(SPOT.lat)).field('lng', String(SPOT.lng));
+  expect(res.status).toBe(201);
+  return res.body;
+}
+
+async function staffToken() {
+  const res = await request(app)
+    .post('/api/v1/auth/login')
+    .send({ email: 'staff@example.govt.nz', password: 'password123' });
+  expect(res.status).toBe(200);
+  return res.body.token as string;
+}
+
+describe('PATCH /api/v1/reports/:id', () => {
+  it('requires a staff token', async () => {
+    const r = await makeReport();
+    const res = await request(app).patch(`/api/v1/reports/${r.id}`).send({ status: 'investigating' });
+    expect(res.status).toBe(401);
+  });
+
+  it('advances status and sets resolved_at', async () => {
+    const token = await staffToken();
+    const r = await makeReport();
+    const inv = await request(app)
+      .patch(`/api/v1/reports/${r.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'investigating', verified: true });
+    expect(inv.status).toBe(200);
+    expect(inv.body.status).toBe('investigating');
+    expect(inv.body.verified).toBe(true);
+    expect(inv.body.reporter_name).toBeDefined(); // staff view
+
+    const done = await request(app)
+      .patch(`/api/v1/reports/${r.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'resolved' });
+    expect(done.status).toBe(200);
+    expect(done.body.status).toBe('resolved');
+    expect(done.body.resolved_at).not.toBeNull();
+    expect(['met', 'missed']).toContain(done.body.sla_status);
+  });
+
+  it('rejects invalid transitions with 409', async () => {
+    const token = await staffToken();
+    const r = await makeReport();
+    const res = await request(app)
+      .patch(`/api/v1/reports/${r.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'investigating' });
+    expect(res.status).toBe(200);
+    const back = await request(app)
+      .patch(`/api/v1/reports/${r.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'received' });
+    expect(back.status).toBe(409);
+    expect(back.body.error.code).toBe('invalid_transition');
+  });
+
+  it('rejects duplicate chains with 422', async () => {
+    const token = await staffToken();
+    const a = await makeReport();
+    const b = await makeReport();
+    const c = await makeReport();
+    await request(app)
+      .patch(`/api/v1/reports/${b.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ is_duplicate_of: a.id });
+    const chain = await request(app)
+      .patch(`/api/v1/reports/${c.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ is_duplicate_of: b.id }); // b is itself a duplicate → chain
+    expect(chain.status).toBe(422);
+    expect(chain.body.error.code).toBe('invalid_duplicate_target');
+  });
+
+  it('recalculates SLA when severity changes', async () => {
+    const token = await staffToken();
+    const r = await makeReport(); // minor/road → 48 h
+    const res = await request(app)
+      .patch(`/api/v1/reports/${r.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ severity: 'major' }); // major/road → 12 h
+    expect(res.status).toBe(200);
+    const hours = (new Date(res.body.sla_due_at).getTime() - new Date(res.body.created_at).getTime()) / 3.6e6;
+    expect(hours).toBeCloseTo(12, 0);
+  });
+});

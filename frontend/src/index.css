@@ -1,0 +1,4 @@
+@import "tailwindcss";
+
+html { -webkit-tap-highlight-color: transparent; }
+.leaflet-container { min-height: 16rem; border-radius: 0.75rem; }

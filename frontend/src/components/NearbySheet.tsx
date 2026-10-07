@@ -1,0 +1,72 @@
+// frontend/src/components/NearbySheet.tsx — pre-submit duplicate check
+// (spec §5 reporter UX).
+import type { NearbyResult } from '../api/reports.js';
+import { confirmReport } from '../api/reports.js';
+import { timeAgo, LOCATION_LABELS } from '../util/format.js';
+import { StatusBadge } from './StatusBadge.js';
+
+interface Props {
+  results: NearbyResult[];
+  onDifferent: () => void;
+  onConfirmed: (id: number) => void;
+}
+
+export default function NearbySheet({ results, onDifferent, onConfirmed }: Props) {
+  const confirm = async (id: number) => {
+    try {
+      await confirmReport(id);
+      onConfirmed(id);
+    } catch {
+      // already resolved etc. — let them continue to their own report
+      onDifferent();
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <h2 className="text-lg font-semibold text-slate-900">Is this the leak you’re reporting?</h2>
+      <p className="mt-1 text-sm text-slate-500">
+        These were reported nearby. Tap one if it’s the same leak — the council already knows.
+      </p>
+      <ul className="mt-3 space-y-3">
+        {results.map((r) => (
+          <li key={r.id} className="flex gap-3 rounded-xl border border-slate-200 p-3">
+            {r.thumb_url && (
+              <img src={r.thumb_url} alt="" className="h-16 w-16 rounded-lg object-cover" />
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-slate-900">{LOCATION_LABELS[r.category]}</span>
+                <StatusBadge status={r.status} />
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                {r.ref} · {timeAgo(r.created_at)} · {Math.round(r.distance_m)} m away
+                {r.confirmation_count > 0 && ` · seen by ${r.confirmation_count} other${r.confirmation_count === 1 ? '' : 's'}`}
+              </p>
+              {r.status === 'resolved' ? (
+                <p className="mt-2 text-sm font-medium text-amber-700">
+                  Fixed recently — is it leaking again?
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => confirm(r.id)}
+                  className="mt-2 rounded-lg bg-cyan-700 px-3 py-1.5 text-sm font-medium text-white"
+                >
+                  Yes, that’s it
+                </button>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        onClick={onDifferent}
+        className="mt-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+      >
+        No, mine’s different — continue
+      </button>
+    </div>
+  );
+}

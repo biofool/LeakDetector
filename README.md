@@ -1,64 +1,74 @@
 # LeakDetector
 
-Citizen water-leak reporting for NZ councils — mobile-first web form,
-duplicate detection, SLA timers, duty-officer alerts, public status map.
+Citizen water-leak reporting for NZ councils — mobile-first PWA, duplicate
+detection, SLA timers, council alerts, public status map.
 Modelled on FixMyStreet / SeeClickFix / MAWC Citizen Leak Reporter.
+
+## Layout
+
+| Path | What |
+|---|---|
+| `backend/` | Node + Express + Postgres/PostGIS API, `/api/v1` |
+| `frontend/` | React + Vite + Tailwind PWA |
+| `docs/` | `spec.md` (design + API), `decisions.md`, `brief.md`, `spec-vs-mvp.md` |
+| `legacy/` | Original FastAPI + SQLite MVP (reference only) |
 
 ## Quick start
 
 ```bash
-pip3 install -r requirements.txt
-STAFF_TOKEN=devtoken uvicorn app.main:app --host 0.0.0.0 --port 8080
+# 1. Postgres + PostGIS
+docker run -d --name leakdetector-postgis \
+  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=leakdetector \
+  -p 5433:5432 docker.io/postgis/postgis:16-3.5
+
+# 2. API on :8080
+cd backend && npm install && cp .env.example .env
+npm run migrate && npm run seed && npm run dev
+
+# 3. Worker (notifications + SLA sweep) — second terminal
+cd backend && npm run worker
+
+# 4. PWA on :5173 — third terminal
+cd frontend && npm install && cp .env.example .env && npm run dev
 ```
 
-Report form: http://127.0.0.1:8080/ — public map: http://127.0.0.1:8080/map.html — API docs: http://127.0.0.1:8080/docs
-
-Config via env vars — see `.env.example`. Optional council-zone assignment:
-drop a GeoJSON FeatureCollection of maintenance zones at
-`data/council_zones.geojson` (each feature needs a `name` or `zone` property).
+Report form: http://127.0.0.1:5173/ — map: http://127.0.0.1:5173/map —
+staff: http://127.0.0.1:5173/staff (seed login `staff@example.govt.nz` / `password123`)
 
 ## Design docs
 
-The code here is a FastAPI + SQLite **MVP prototype**. The target design is a
-Node/Express + PostGIS `/backend` and React + Vite + Tailwind `/frontend`
-monorepo — start at [`docs/README.md`](docs/README.md):
-[`spec.md`](docs/spec.md) (target design and build guide),
-[`decisions.md`](docs/decisions.md) (where the spec departs from the brief),
-[`spec-vs-mvp.md`](docs/spec-vs-mvp.md) (gap between this code and the spec).
+Start at [`docs/README.md`](docs/README.md): [`spec.md`](docs/spec.md) is the
+implementation contract, [`decisions.md`](docs/decisions.md) records every
+deviation from the original [`brief.md`](docs/brief.md), and
+[`spec-vs-mvp.md`](docs/spec-vs-mvp.md) lists what changed versus the legacy MVP.
 
-## API (MVP)
+## Tests
 
-| Endpoint | Auth | Purpose |
-|---|---|---|
-| `POST /api/reports` | public | Submit a leak (multipart: lat/lon/category/size/desc/contact/photos≤3) |
-| `GET /api/reports?status=` | public | List reports (contact stripped) |
-| `GET /api/reports/nearby?lat&lon&radius` | public | Duplicate check (default 30 m) |
-| `POST /api/reports/{id}/confirm` | public | "Same leak" — bumps confirmations |
-| `PATCH /api/reports/{id}?status=` | `X-Staff-Token` | Advance status (received → investigating → contractor_assigned → repaired / private_owner / duplicate / rejected) |
-| `GET /api/stats` | public | Totals, per-status, per-zone, median repair time |
+```bash
+cd backend && npm test    # Jest + supertest against a fresh PostGIS test DB
+cd frontend && npm test   # Vitest
+```
 
-## Stack & layout
+## Deploy notes — Railway
 
-FastAPI + SQLite (stdlib `sqlite3`, swappable for PostGIS) + no-build
-Leaflet frontend. `app/` backend, `static/` web, `tests/` pytest,
-`data/` runtime state (gitignored except `.gitkeep`).
+One Railway project; services `api`, `worker`, `web` + a Postgres plugin with
+PostGIS enabled (`CREATE EXTENSION postgis` — run once, or let `npm run migrate`
+do it; `001_init.sql` includes it).
 
-## What's included from the template
+- `api` — root dir `backend/`, pre-deploy `npm run migrate`, start `npm start`.
+- `worker` — root dir `backend/`, start `npm run worker`.
+- `web` — root dir `frontend/`, build `npm run build`, serve `dist/`
+  (static). Set `VITE_API_BASE_URL` at build time.
+- Env vars per service: `DATABASE_URL`, `JWT_SECRET`, `PUBLIC_BASE_URL`,
+  `POSTMARK_*`/`TWILIO_*` for delivery, `S3_*` for photo storage
+  (no bucket → local disk, which does not survive redeploys).
 
-- `AGENTS.md` / `CLAUDE.md` — shared biofool AI-agent rules (versioned,
-  synced from the template).
-- `.githooks/pre-commit` — blocks commits containing known secret patterns
-  (`scripts/scan_secrets.py` pattern set). Install with
-  `git config core.hooksPath .githooks` or copy to `.git/hooks/`.
-- `scripts/scan_secrets.py` — working-tree secret scanner with `--dry-run`
-  and JSON audit output to `data/audit/`.
-- `scripts/audit-deps.sh` + `.github/workflows/{dependency-review,dependency-audit,secret-scan}.yml`
-  — the three-layer dependency/secret gating described in `AGENTS.md`.
-- `.devin/skills/` — bundled skills incl. Brave Search (needs
-  `BRAVE_SEARCH_API_KEY`) and ponytail.
+**Data residency:** Railway has no NZ region. Reporter contact details are
+personal information under the Privacy Act 2020 (IPP 12) — confirm partner
+councils accept offshore storage before go-live [D-15].
 
 ## Repo conventions
 
 - Default branch `main`; `dev` exists as the template's dev snapshot.
-- Fix scripts go in `scripts/fix/` with `--dry-run`, `--limit`/`--offset`,
-  audit JSON to `data/audit/`.
+- Fix scripts go in `scripts/fix/` with `--dry-run`, audit JSON to `data/audit/`.
+- `scripts/scan_secrets.py` + `.githooks/pre-commit` guard against secrets.
