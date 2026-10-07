@@ -4,6 +4,14 @@
 set -e
 cd /opt/leakdetector/backend
 
+# Host firewall: OCI Ubuntu image REJECTs non-SSH inbound; docker published
+# ports bypass INPUT, but host nginx on 80/443 does not. Re-assert on every
+# deploy (not persistent across reboots — see docs/test-plan-e2e.md notes).
+sudo -n iptables -C INPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT 2>/dev/null || \
+  sudo -n iptables -I INPUT 4 -p tcp --dport 80 -m state --state NEW -j ACCEPT
+sudo -n iptables -C INPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT 2>/dev/null || \
+  sudo -n iptables -I INPUT 5 -p tcp --dport 443 -m state --state NEW -j ACCEPT
+
 docker build -t leakdetector-api . >/dev/null
 
 if [ ! -f /opt/leakdetector/leakdetector.env ]; then
