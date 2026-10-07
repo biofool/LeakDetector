@@ -1,5 +1,6 @@
 // backend/src/middleware/errors.ts — spec error shape + helpers.
 import type { Request, Response, NextFunction } from 'express';
+import { MulterError } from 'multer';
 import { ZodError } from 'zod';
 
 export class ApiError extends Error {
@@ -21,6 +22,13 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
         details: err.issues.map((i) => ({ field: i.path.join('.'), issue: i.message })),
       },
     });
+    return;
+  }
+  if (err instanceof MulterError) {
+    // spec §3: 413 photo too large; other multipart violations are bad requests
+    const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+    const code = err.code === 'LIMIT_FILE_SIZE' ? 'photo_too_large' : 'validation_failed';
+    res.status(status).json({ error: { code, message: err.message } });
     return;
   }
   console.error('[unhandled]', err);

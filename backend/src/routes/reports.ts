@@ -102,7 +102,12 @@ router.post(
 
         const files = (req.files as Express.Multer.File[]) ?? [];
         for (const f of files) {
-          const p = await processPhoto(id, f.buffer);
+          let p;
+          try {
+            p = await processPhoto(id, f.buffer);
+          } catch {
+            throw new ApiError(415, 'unsupported_type', 'photo could not be processed — is it a real image?');
+          }
           await client.query(
             `INSERT INTO report_photos (report_id, storage_key, thumb_key, content_type, width, height, bytes)
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -194,6 +199,28 @@ router.get('/:id(\\d+)', optionalStaff, async (req, res, next) => {
     if (!row) throw new ApiError(404, 'not_found', 'report not found');
     const staff = Boolean(req.user && canAccess(req.user, row.council_id));
     res.json(toReport(row, await photosOf(row.id), staff));
+  } catch (e) {
+    next(e);
+  }
+});
+
+// -------------------------------------------- PATCH /:id/photos/:photoId
+// Staff photo moderation — hide photos showing faces, plates, etc. [D-07]
+router.patch('/:id(\\d+)/photos/:photoId(\\d+)', requireStaff, async (req, res, next) => {
+  try {
+    const body = z.object({ is_hidden: z.boolean() }).parse(req.body);
+    const { rows } = await query(`${REPORT_SELECT} WHERE r.id = $1`, [req.params.id]);
+    const row = rows[0] as ReportRow | undefined;
+    if (!row) throw new ApiError(404, 'not_found', 'report not found');
+    if (!canAccess(req.user!, row.council_id!)) {
+      throw new ApiError(403, 'forbidden', 'report belongs to another council');
+    }
+    const upd = await query(
+      'UPDATE report_photos SET is_hidden = $1 WHERE id = $2 AND report_id = $3 RETURNING id, is_hidden',
+      [body.is_hidden, req.params.photoId, req.params.id],
+    );
+    if (!upd.rowCount) throw new ApiError(404, 'not_found', 'photo not found on this report');
+    res.json({ id: Number(upd.rows[0].id), is_hidden: upd.rows[0].is_hidden });
   } catch (e) {
     next(e);
   }
@@ -293,8 +320,10 @@ router.patch('/:id(\\d+)', requireStaff, async (req, res, next) => {
       const id = Number(out[0].id);
       const ref = toRef(id);
 
-      // Reporter messaging on closure.
-      const closing = patch.status === 'resolved' || patch.status === 'closed_private';
+      // Reporter messaging on closure — only on an actual status change,
+      // not on re-PATCH of an already-closed report.
+      const closing =
+        (patch.status === 'resolved' || patch.status === 'closed_private') && patch.status !== row.status;
       if (closing && row.reporter_contact) {
         await queue(client, {
           report_id: id,
@@ -338,9 +367,14 @@ router.patch('/:id(\\d+)', requireStaff, async (req, res, next) => {
 // ---------------------------------------------------------------- GET /
 router.get('/', optionalStaff, async (req, res, next) => {
   try {
-    const q = req.query as Record<string, string | undefined>;
+    // req.query values can be string | string[] — normalise to one string
+    const one = (v: unknown): string | undefined =>
+      Array.isArray(v) ? String(v[v.length - 1]) : v === undefined ? undefined : String(v);
+    const q: Record<string, string | undefined> = {};
+    for (const [k, v] of Object.entries(req.query)) q[k] = one(v);
     const staffScoped = req.user && req.user.role !== 'platform_admin';
     const isStaff = Boolean(req.user);
+    const bad = (msg: string) => new ApiError(400, 'validation_failed', msg);
 
     const where: string[] = [];
     const vals: unknown[] = [];
@@ -351,21 +385,39 @@ router.get('/', optionalStaff, async (req, res, next) => {
     const csv = (s?: string) => (s ? s.split(',').map((x) => x.trim()).filter(Boolean) : null);
 
     const statuses = csv(q.status);
-    if (statuses?.length) cond('r.status = ANY(?::report_status[])', statuses);
+    if (statuses?.length) {
+      if (statuses.some((s) => !(STATUSES as readonly string[]).includes(s))) throw bad(`status must be one of ${STATUSES.join(', ')}`);
+      cond('r.status = ANY(?::report_status[])', statuses);
+    }
     const categories = csv(q.category);
-    if (categories?.length) cond('r.category = ANY(?::leak_location[])', categories);
+    if (categories?.length) {
+      if (categories.some((s) => !(LOCATIONS as readonly string[]).includes(s))) throw bad(`category must be one of ${LOCATIONS.join(', ')}`);
+      cond('r.category = ANY(?::leak_location[])', categories);
+    }
     const severities = csv(q.severity);
-    if (severities?.length) cond('r.severity = ANY(?::leak_severity[])', severities);
-    if (q.council_zone_id) cond('r.council_zone_id = ?', Number(q.council_zone_id));
-    if (q.updated_since) cond('r.updated_at > ?', q.updated_since);
+    if (severities?.length) {
+      if (severities.some((s) => !(SEVERITIES as readonly string[]).includes(s))) throw bad(`severity must be one of ${SEVERITIES.join(', ')}`);
+      cond('r.severity = ANY(?::leak_severity[])', severities);
+    }
+    if (q.council_zone_id) {
+      const zid = Number(q.council_zone_id);
+      if (!Number.isInteger(zid)) throw bad('council_zone_id must be an integer');
+      cond('r.council_zone_id = ?', zid);
+    }
+    if (q.updated_since) {
+      if (Number.isNaN(Date.parse(q.updated_since))) throw bad('updated_since must be an ISO timestamp');
+      cond('r.updated_at > ?', q.updated_since);
+    }
     if (q.bbox) {
       const parts = q.bbox.split(',').map(Number);
       if (parts.length !== 4 || parts.some(Number.isNaN)) {
-        throw new ApiError(400, 'validation_failed', 'bbox must be minLng,minLat,maxLng,maxLat');
+        throw bad('bbox must be minLng,minLat,maxLng,maxLat');
       }
       vals.push(...parts);
       where.push(`r.geom && ST_MakeEnvelope($${vals.length - 3}, $${vals.length - 2}, $${vals.length - 1}, $${vals.length}, 4326)`);
     }
+    const SLA_FILTERS = ['on_track', 'due_soon', 'breached'];
+    if (q.sla !== undefined && !SLA_FILTERS.includes(q.sla)) throw bad(`sla must be one of ${SLA_FILTERS.join(', ')}`);
     const open = `r.status IN ('${OPEN_STATUSES.join("','")}') AND r.is_duplicate_of IS NULL`;
     if (q.sla === 'breached') where.push(`${open} AND r.sla_due_at < now()`);
     if (q.sla === 'due_soon') {
@@ -380,8 +432,15 @@ router.get('/', optionalStaff, async (req, res, next) => {
     }
     if (staffScoped) cond('z.council_id = ?', req.user!.council_id);
 
-    const page = Math.max(1, Number(q.page ?? 1));
-    const limit = Math.min(Math.max(1, Number(q.limit ?? 50)), 200);
+    const pageNum = Number(q.page ?? 1);
+    const limitNum = Number(q.limit ?? 50);
+    if (!Number.isFinite(pageNum) || pageNum < 1) throw bad('page must be a positive integer');
+    if (!Number.isFinite(limitNum) || limitNum < 1) throw bad('limit must be a positive integer');
+    const page = Math.floor(pageNum);
+    const limit = Math.min(Math.floor(limitNum), 200);
+    const SORTS = ['sla_due_at', '-created_at'];
+    if (q.sort !== undefined && !SORTS.includes(q.sort)) throw bad(`sort must be one of ${SORTS.join(', ')}`);
+    if (q.format !== undefined && !['json', 'geojson'].includes(q.format)) throw bad('format must be json or geojson');
     const orderBy = q.sort === 'sla_due_at' || (!q.sort && isStaff) ? 'r.sla_due_at ASC' : 'r.created_at DESC';
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 

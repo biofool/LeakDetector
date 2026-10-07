@@ -19,7 +19,8 @@ let warnedLocal = false;
 
 export function photoUrl(key: string): string {
   if (s3Enabled && config.s3.publicBaseUrl) return `${config.s3.publicBaseUrl.replace(/\/$/, '')}/${key}`;
-  return `/uploads/${key}`;
+  // absolute — the PWA is usually on a different origin than the API
+  return `${config.apiPublicUrl.replace(/\/$/, '')}/uploads/${key}`;
 }
 
 export interface ProcessedPhoto {
@@ -45,18 +46,18 @@ async function store(key: string, buf: Buffer): Promise<void> {
   await writeFile(dest, buf);
 }
 
-/** Re-encode to webp at 1600px + 400px thumb. EXIF is dropped by default. */
+/** Re-encode to webp at 1600px + 400px thumb. EXIF is dropped by default.
+ *  Throws on undecodable input — callers map that to 415. */
 export async function processPhoto(reportId: number, buf: Buffer): Promise<ProcessedPhoto> {
   const base = `reports/${reportId}/${randomUUID().slice(0, 8)}`;
   const img = sharp(buf).rotate(); // .rotate() applies EXIF orientation, then EXIF is stripped
-  const meta = await img.metadata();
   const [full, thumb] = await Promise.all([
-    img.clone().resize({ width: 1600, withoutEnlargement: true }).webp({ quality: 80 }).toBuffer(),
+    img.clone().resize({ width: 1600, withoutEnlargement: true }).webp({ quality: 80 }).toBuffer({ resolveWithObject: true }),
     img.clone().resize({ width: 400, withoutEnlargement: true }).webp({ quality: 70 }).toBuffer(),
   ]);
   const storage_key = `${base}.webp`;
   const thumb_key = `${base}_t.webp`;
-  await store(storage_key, full);
+  await store(storage_key, full.data);
   await store(thumb_key, thumb);
-  return { storage_key, thumb_key, content_type: 'image/webp', width: meta.width ?? 0, height: meta.height ?? 0, bytes: full.length };
+  return { storage_key, thumb_key, content_type: 'image/webp', width: full.info.width, height: full.info.height, bytes: full.data.length };
 }

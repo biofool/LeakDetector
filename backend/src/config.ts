@@ -14,6 +14,7 @@ export const config = {
   port: Number(env('PORT', '8080')),
   databaseUrl: env('DATABASE_URL', 'postgres://postgres:postgres@127.0.0.1:5433/leakdetector'),
   publicBaseUrl: env('PUBLIC_BASE_URL', 'http://127.0.0.1:5173'),
+  apiPublicUrl: env('API_PUBLIC_URL', 'http://127.0.0.1:8080'),
 
   jwtSecret: env('JWT_SECRET', 'dev-insecure-secret'),
   jwtTtlHours: Number(env('JWT_TTL_HOURS', '8')),
