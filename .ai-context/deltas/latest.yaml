@@ -1,0 +1,15 @@
+from_revision: null
+to_revision: da39d5f49f5d0f4937079f52eace3f41c7d2121c
+added: []
+changed: []
+invalidated: []
+conflicts: []
+reverified: []
+unknowns_added:
+  - UNKNOWN-001
+  - UNKNOWN-002
+  - UNKNOWN-003
+  - UNKNOWN-004
+  - UNKNOWN-005
+unknowns_resolved: []
+notes: "Initial context compilation — all artifacts created from scratch."

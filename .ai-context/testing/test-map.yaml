@@ -1,0 +1,42 @@
+# Test & Validation Routing Map
+# This template repo has NO tests, NO build system, NO linter, NO CI/CD.
+# All targets are N/A — recorded as a gap, not an omission.
+
+targets:
+  - target: template-content
+    description: "Validate template files are syntactically correct and in sync"
+    unit: []
+    integration: []
+    typecheck: []
+    lint: []
+    notes:
+      - "No automated validation exists for template content"
+      - "Manual checks: AGENTS.md ↔ CLAUDE.md mirror consistency, version stamp currency"
+      - "YAML/JSON validity: .claude/settings.json, SKILL.md frontmatter"
+
+  - target: skills
+    description: "Validate Devin skill definitions"
+    unit: []
+    integration: []
+    typecheck: []
+    lint: []
+    notes:
+      - "Skills are Markdown documentation — no executable code to test"
+      - "Live API calls require BRAVE_SEARCH_API_KEY (not tested in template)"
+      - "Manual check: SKILL.md frontmatter has name + description fields"
+
+  - target: gitignore
+    description: "Validate .gitignore patterns"
+    unit: []
+    integration: []
+    typecheck: []
+    lint: []
+    notes:
+      - "No automated validation"
+      - "Manual check: secrets entries present (.env, *.key, *.pem, credentials.json, cookies.txt)"
+
+# Commands that DO NOT exist in this repo (recorded to prevent invention):
+# - No `npm test`, `pytest`, `make test`, `tox`, or any test runner
+# - No `npm run lint`, `flake8`, `ruff`, or any linter
+# - No `tsc`, `mypy`, `pyright`, or any type checker
+# - No CI/CD pipeline (no .github/workflows/, no .gitlab-ci.yml)

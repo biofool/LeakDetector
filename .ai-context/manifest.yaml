@@ -1,0 +1,98 @@
+repository_revision: da39d5f49f5d0f4937079f52eace3f41c7d2121c
+analysis_timestamp: "2026-08-22T00:00:00Z"
+analyzer_version: "context-compiler-v2"
+pass_plan:
+  session_scope: "Full analysis of template/config repo — all 17 files, 0 LOC code"
+  stages_executed: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+  stages_deferred: []
+  components_in_scope:
+    - agents-md
+    - claude-md
+    - devin-skills
+    - gitignore
+    - claude-settings
+    - readme
+    - technical-marketing-readme
+  components_deferred: []
+  depth: "template/config — no runtime paths, no code, no tests to map"
+coverage:
+  analyzed_domains:
+    - shared-rules
+    - ai-agent-config
+    - devin-skills
+    - gitignore-policy
+    - cloud-strategy-guidance
+  excluded_paths:
+    - .git/
+  total_files: 17
+  code_files: 0
+  config_files: 1
+  doc_files: 16
+commands_run:
+  - "find . -not -path './.git/*' -type f"
+  - "git log --oneline -5"
+  - "git rev-parse HEAD"
+  - "wc -l (all files)"
+commands_not_run: []
+limitations:
+  - "No application code — runtime workflow mapping is N/A; workflows cover template sync and skill usage instead"
+  - "No tests exist — test-map.yaml records this as a gap, not an omission"
+  - "No CI/CD — deployment/delivery analysis is N/A"
+  - "Cloud strategy section references external repos (CloudManagement) not analyzed here"
+artifacts:
+  - path: .ai-context/index.md
+    source_paths: [AGENTS.md, CLAUDE.md, README.md, TechnicalMarketingReadMe.md]
+    last_verified_revision: da39d5f
+  - path: .ai-context/quickstart.md
+    source_paths: [AGENTS.md, CLAUDE.md, README.md]
+    last_verified_revision: da39d5f
+  - path: .ai-context/architecture/system-overview.md
+    source_paths: [AGENTS.md, CLAUDE.md, README.md, TechnicalMarketingReadMe.md]
+    last_verified_revision: da39d5f
+  - path: .ai-context/architecture/index.md
+    source_paths: [AGENTS.md, CLAUDE.md]
+    last_verified_revision: da39d5f
+  - path: .ai-context/components/agents-md.md
+    source_paths: [AGENTS.md]
+    last_verified_revision: da39d5f
+  - path: .ai-context/components/claude-md.md
+    source_paths: [CLAUDE.md]
+    last_verified_revision: da39d5f
+  - path: .ai-context/components/devin-skills.md
+    source_paths: [.devin/skills/*/SKILL.md]
+    last_verified_revision: da39d5f
+  - path: .ai-context/components/gitignore.md
+    source_paths: [.gitignore]
+    last_verified_revision: da39d5f
+  - path: .ai-context/workflows/template-sync.md
+    source_paths: [README.md, AGENTS.md, CLAUDE.md]
+    last_verified_revision: da39d5f
+  - path: .ai-context/workflows/cloud-strategy-sync.md
+    source_paths: [AGENTS.md]
+    last_verified_revision: da39d5f
+  - path: .ai-context/change-impact/relationships.yaml
+    source_paths: [AGENTS.md, CLAUDE.md, .gitignore, .claude/settings.json, .devin/skills/]
+    last_verified_revision: da39d5f
+  - path: .ai-context/conventions/coding-patterns.md
+    source_paths: [AGENTS.md, CLAUDE.md]
+    last_verified_revision: da39d5f
+  - path: .ai-context/testing/test-map.yaml
+    source_paths: []
+    last_verified_revision: da39d5f
+  - path: .ai-context/debt/register.yaml
+    source_paths: [AGENTS.md, CLAUDE.md, README.md]
+    last_verified_revision: da39d5f
+  - path: .ai-context/decisions/architecture-decisions.md
+    source_paths: [AGENTS.md, CLAUDE.md, README.md, TechnicalMarketingReadMe.md]
+    last_verified_revision: da39d5f
+  - path: .ai-context/unknowns/register.yaml
+    source_paths: [AGENTS.md, .devin/skills/]
+    last_verified_revision: da39d5f
+  - path: .ai-context/deltas/latest.yaml
+    source_paths: []
+    last_verified_revision: da39d5f
+unresolved_unknowns:
+  - "UNKNOWN-001: Exact list of downstream repos currently synced to this template"
+  - "UNKNOWN-002: Whether .devin/config.local.json.example exists (README references it)"
+  - "UNKNOWN-003: Whether any automated sync mechanism exists beyond manual curl+merge"
+prior_analyzed_revision: null

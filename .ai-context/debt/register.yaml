@@ -1,0 +1,84 @@
+# Technical Debt Register
+# Sorted by priority_score (impact × likelihood × reach, each 1-5)
+
+items:
+  - id: DEBT-001
+    type: code_smell
+    summary: "search/SKILL.md is a duplicate of bx/SKILL.md (same frontmatter name: bx)"
+    priority_score: 9  # impact:2 × likelihood:5 × reach:1 (only affects skill listing)
+    impact: 2
+    likelihood: 5
+    reach: 1
+    evidence:
+      - path: .devin/skills/search/SKILL.md
+        observation: "frontmatter has name: bx — identical to .devin/skills/bx/SKILL.md"
+        evidence_type: "observed"
+      - path: .devin/skills/bx/SKILL.md
+        observation: "same name, same description, same line count (226)"
+        evidence_type: "observed"
+    recommendation: "Remove .devin/skills/search/ directory or rename to a distinct skill"
+    status: open
+
+  - id: DEBT-002
+    type: improvement_opportunity
+    summary: "No automated AGENTS.md ↔ CLAUDE.md sync check"
+    priority_score: 12  # impact:4 × likelihood:3 × reach:1
+    impact: 4
+    likelihood: 3
+    reach: 1
+    evidence:
+      - path: AGENTS.md
+        observation: "line 13 says CLAUDE.md mirrors, but no tooling verifies this"
+        evidence_type: "observed"
+      - path: CLAUDE.md
+        observation: "Global conventions section is manually maintained mirror"
+        evidence_type: "observed"
+    recommendation: "Add a script that diffs the rules sections and fails if out of sync"
+    status: open
+
+  - id: DEBT-003
+    type: improvement_opportunity
+    summary: "README.md references .devin/config.local.json.example which does not exist"
+    priority_score: 6  # impact:2 × likelihood:3 × reach:1
+    impact: 2
+    likelihood: 3
+    reach: 1
+    evidence:
+      - path: README.md
+        lines: "66-68"
+        observation: "references cp .devin/config.local.json.example but file not found in repo"
+        evidence_type: "observed"
+      - path: .devin/
+        observation: "no config.local.json.example file exists; only skills/ directory present"
+        evidence_type: "observed"
+    recommendation: "Create the example file or remove the reference from README.md"
+    status: open
+
+  - id: DEBT-004
+    type: evidence_gap
+    summary: "No CI/CD pipeline to validate template integrity"
+    priority_score: 8  # impact:3 × likelihood:2 × reach:1 (template only)
+    impact: 3
+    likelihood: 2
+    reach: 1
+    evidence:
+      - path: .
+        observation: "no .github/workflows/, no .gitlab-ci.yml, no Makefile"
+        evidence_type: "observed"
+    recommendation: "Add minimal CI: YAML/JSON validity check, mirror consistency check, secrets-entry presence check"
+    status: open
+
+  - id: DEBT-005
+    type: architectural_risk
+    summary: "Cloud strategy section hardcodes specific infrastructure details (Oracle A1 specs, hub URLs)"
+    priority_score: 10  # impact:4 × likelihood:2 × reach:1
+    impact: 4
+    likelihood: 2
+    reach: 1
+    evidence:
+      - path: AGENTS.md
+        lines: "143-146, 186"
+        observation: "hardcodes '2 OCPU / 12 GB', 'shared-a1', 'a1-origin.magicsolutions.biz', 'hub-origin.magicsolutions.biz:8080'"
+        evidence_type: "observed"
+    recommendation: "Move infrastructure-specific details to CloudManagement repo; keep template guidance generic"
+    status: open
