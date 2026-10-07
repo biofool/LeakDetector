@@ -1,4 +1,4 @@
-<!-- AI coding config version: 2026-07-25 — sourced from biofool/starter template.
+<!-- AI coding config version: 2026-10-07 — sourced from biofool/starter template.
      Shared settings across all biofool projects; see ~/.codeium/windsurf/memories/shared_template_config.md -->
 
 # AGENTS.md — Global Rules for AI Agents
@@ -142,6 +142,16 @@ Write commands on a single line — backslash continuations break copy-paste.
 Long `gcloud`/`terraform`/`gsutil`/`kubectl` commands stay on one line
 regardless of length.
 
+## Chat reply style — Simplified Technical English (unless it hurts clarity)
+
+Write all chat replies in **Simplified Technical English (STE)**: short
+sentences, active voice, one instruction per sentence, approved and
+consistent terminology, no unexplained jargon. If strict STE would create
+confusion or ambiguity in a reply, drop the constraint and write whatever
+is briefest and clearest — STE serves clarity, not the other way around.
+Applies to chat output only — code, commit messages, and documentation
+keep their normal style.
+
 ## One-off fix scripts (workflow convention)
 
 When building repair/fix scripts for data quality or operational issues:
@@ -186,6 +196,48 @@ coordination rule (e.g. "auth changes MUST update both PRDs and deploy both
 repos together"). Mismatched frontend/backend versions break the flow. See
 `~/projects/quantumaikido.com/web/AGENTS.md` and
 `~/projects/AIRichardMoon/AGENTS.md` for the canonical example.
+
+## Dependency vulnerability gating (SCA)
+
+Dependabot alerts are advisory only — they do NOT block merges or deploys.
+The required pattern is a three-layer gate; all layers must be in place
+(canonical reference: `quantumaikido.com` AGENTS.md; rollout tracking:
+`biofool/CloudManagement` issue #88):
+
+1. **PR-time dependency review.** `.github/workflows/dependency-review.yml`
+   running `actions/dependency-review-action@v4` on `pull_request` with
+   `fail-on-severity: high`. It diffs manifest/lockfile changes against the
+   GitHub Advisory Database (same DB as Dependabot) and fails the check
+   before merge. Requires committed lockfiles (`package-lock.json`,
+   `composer.lock`, `uv.lock`, `Cargo.lock`, …) — never gitignore them.
+   Requires the dependency graph enabled; **private repos need GitHub
+   Advanced Security** — where unavailable, run `bash scripts/audit-deps.sh`
+   as a `pull_request` check instead (full-tree audit, stricter than
+   diff-only).
+2. **Scheduled audit of the default branch.**
+   `.github/workflows/dependency-audit.yml` runs `scripts/audit-deps.sh`
+   daily/weekly against committed lockfiles (`npm audit
+   --audit-level=high`, `pip-audit`, `composer audit`, `cargo audit`,
+   `govulncheck`, …). On findings it must fail the workflow AND open an
+   issue — an audit that only logs is invisible. This catches CVEs
+   disclosed after the code merged.
+3. **Deploy gate.** Production deploy must not run while findings are open.
+   GitHub: deploy job `needs:` the audit job + required-check branch
+   protection on `main`. Local script deploys (`./sync.sh deploy`,
+   `./deploy.sh`): a preflight `bash scripts/audit-deps.sh` step that exits
+   non-zero on findings; any `--skip-audit` escape hatch must print a loud
+   warning and be logged.
+
+Rules: CI installs use `npm ci`/`composer install --no-dev`/locked
+resolution, never floating installs. Vulnerability exceptions go in a
+dated allowlist file with an issue link — reviewed at expiry, never
+permanent. New-version supply-chain delay: prefer
+`minimumReleaseAge`/`minimumReleaseAgeExclude` (npm) or equivalents over
+auto-merging fresh releases.
+
+This template ships all the pieces: `.github/workflows/dependency-review.yml`,
+`.github/workflows/dependency-audit.yml`, and `scripts/audit-deps.sh` (shared
+by the scheduled workflow and deploy preflights).
 
 ## Cloud strategy — CloudManagement coordination
 

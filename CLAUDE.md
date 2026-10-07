@@ -1,4 +1,4 @@
-<!-- AI coding config version: 2026-07-25 — sourced from biofool/starter template.
+<!-- AI coding config version: 2026-10-07 — sourced from biofool/starter template.
      Shared settings across all biofool projects; see ~/.codeium/windsurf/memories/shared_template_config.md -->
 
 # CLAUDE.md
@@ -7,11 +7,14 @@ This file provides guidance to Claude Code when working in this repository.
 
 ## Project Overview
 
-<!-- What this project is, who it's for, and the problem it solves. -->
+LeakDetector scans git repositories — working trees, committed history, and
+config files — for leaked credentials and secrets (API keys, tokens, private
+keys, passwords). For anyone who wants to find exposed secrets before an
+attacker or a CI secret-scan does.
 
 ## Environment
 
-<!-- Shell (Git Bash / PowerShell / zsh), OS, path conventions, required tools. -->
+Linux (Ubuntu), bash. `gh` CLI authenticated as `biofool`.
 
 ## Commands
 
@@ -84,5 +87,22 @@ edit one, edit both.
   labeled calibration set. Enabled calls report `openrouter` / `decisions` to
   CloudManagement; verify current pricing first. Security/routing/kill uses
   require explicit approval and JEV is never the sole kill authority.
+- **Dependency vulnerability gating (SCA).** Dependabot alerts are advisory
+  only — every repo needs the three-layer gate: PR-time
+  `.github/workflows/dependency-review.yml` (`fail-on-severity: high`),
+  scheduled `.github/workflows/dependency-audit.yml` running
+  `scripts/audit-deps.sh` (fails + opens an issue on findings), and a deploy
+  gate (`needs:` the audit job, or a `bash scripts/audit-deps.sh` preflight
+  in `sync.sh`/`deploy.sh` that exits non-zero on findings). Private repos
+  without GitHub Advanced Security can't use dependency-review-action — run
+  `scripts/audit-deps.sh` as a PR check instead. Lockfiles are always
+  committed; exceptions live in a dated allowlist file with an issue link.
+
+- **Reply in Simplified Technical English (STE) — unless it hurts
+  clarity.** Write chat replies in STE: short sentences, active voice, one
+  instruction per sentence, consistent terminology, no unexplained jargon.
+  If strict STE would create confusion or ambiguity, drop it and write
+  whatever is briefest and clearest. Applies to chat output only — code,
+  commit messages, and docs keep their normal style.
 
 See `AGENTS.md` for the full text of each rule.
