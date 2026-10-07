@@ -35,7 +35,10 @@ const TEMPLATES: Record<string, (p: Record<string, unknown>) => { subject: strin
 // NOTE: row locks are held while sends are in flight (correctness — a second
 // worker can't double-send the same row). Bounded to 20 rows per cycle;
 // revisit if multiple workers run at scale (e.g. a claimed_at column).
+let draining = false;
 async function drainOutbox(): Promise<void> {
+  if (draining) return; // previous cycle still running — don't overlap
+  draining = true;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -101,6 +104,7 @@ async function drainOutbox(): Promise<void> {
     console.error('[worker] drain failed:', e);
   } finally {
     client.release();
+    draining = false;
   }
 }
 

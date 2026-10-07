@@ -289,7 +289,7 @@ router.patch('/:id(\\d+)', requireStaff, async (req, res, next) => {
       if (patch.status && patch.status !== row.status) {
         set('status', patch.status);
         const closing = patch.status === 'resolved' || patch.status === 'closed_private';
-        set('resolved_at', closing ? new Date() : null);
+        sets.push(closing ? 'resolved_at = now()' : 'resolved_at = NULL');
       }
       if (patch.severity !== undefined) set('severity', patch.severity);
       if (patch.location_type !== undefined) set('location_type', patch.location_type);
@@ -306,6 +306,15 @@ router.patch('/:id(\\d+)', requireStaff, async (req, res, next) => {
           const target = t[0];
           if (!target || target.id === row.id || target.is_duplicate_of !== null || target.council_id !== row.council_id) {
             throw new ApiError(422, 'invalid_duplicate_target', 'duplicate target must be a non-duplicate report in the same council');
+          }
+          // No chains: this report can't become a duplicate while other
+          // reports already point at IT as a duplicate.
+          const { rows: kids } = await client.query(
+            'SELECT 1 FROM reports WHERE is_duplicate_of = $1 LIMIT 1',
+            [row.id],
+          );
+          if (kids.length) {
+            throw new ApiError(422, 'invalid_duplicate_target', 'report already has duplicates linked to it — unlink them first');
           }
         }
         set('is_duplicate_of', patch.is_duplicate_of);

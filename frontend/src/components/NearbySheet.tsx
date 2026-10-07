@@ -44,9 +44,18 @@ export default function NearbySheet({ results, onDifferent, onConfirmed }: Props
                 {r.confirmation_count > 0 && ` · seen by ${r.confirmation_count} other${r.confirmation_count === 1 ? '' : 's'}`}
               </p>
               {r.status === 'resolved' ? (
-                <p className="mt-2 text-sm font-medium text-amber-700">
-                  Fixed recently — is it leaking again?
-                </p>
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-amber-700">
+                    Fixed recently — is it leaking again?
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onDifferent}
+                    className="mt-1 rounded-lg border border-amber-600 px-3 py-1.5 text-sm font-medium text-amber-800"
+                  >
+                    It’s leaking again — report it
+                  </button>
+                </div>
               ) : (
                 <button
                   type="button"

@@ -88,6 +88,32 @@ describe('PATCH /api/v1/reports/:id', () => {
     expect(chain.body.error.code).toBe('invalid_duplicate_target');
   });
 
+  it('returns 401 for an invalid staff token — not a silent public view', async () => {
+    const r = await makeReport();
+    const res = await request(app)
+      .get(`/api/v1/reports/${r.id}`)
+      .set('Authorization', 'Bearer not-a-real-token');
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('invalid_token');
+  });
+
+  it('rejects a duplicate link that would form a chain via children', async () => {
+    const token = await staffToken();
+    const a = await makeReport();
+    const b = await makeReport();
+    const c = await makeReport();
+    const ok = await request(app)
+      .patch(`/api/v1/reports/${a.id}`).set('Authorization', `Bearer ${token}`)
+      .send({ is_duplicate_of: b.id });
+    expect(ok.status).toBe(200);
+    // B now has a child (A) — B→C would create chain A→B→C
+    const chain = await request(app)
+      .patch(`/api/v1/reports/${b.id}`).set('Authorization', `Bearer ${token}`)
+      .send({ is_duplicate_of: c.id });
+    expect(chain.status).toBe(422);
+    expect(chain.body.error.code).toBe('invalid_duplicate_target');
+  });
+
   it('does not re-notify when resolved is PATCHed twice', async () => {
     const token = await staffToken();
     const create = await request(app)

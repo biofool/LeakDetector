@@ -44,6 +44,9 @@ start:worker`, `npm run start:migrate` (pre-deploy), `npm run start:seed`.
   sharp build has no libheif → `415`.
 - `API_PUBLIC_URL` must point at this api's public origin — photo URLs are
   built absolute because the PWA is usually on a different origin.
+- `is_hidden` filters photos out of API responses, but the file is still
+  reachable at its URL — obscurity, not access control. Fine for faces/
+  plates moderation; don't treat it as a security boundary.
 
 ## Endpoints (`/api/v1`)
 

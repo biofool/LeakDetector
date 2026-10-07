@@ -34,6 +34,7 @@ async function sendEmail(to: string, subject: string, text: string): Promise<voi
     method: 'POST',
     headers: { 'X-Postmark-Server-Token': config.postmark.token, 'Content-Type': 'application/json' },
     body: JSON.stringify({ From: config.postmark.from, To: to, Subject: subject, TextBody: text }),
+    signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`postmark ${res.status}: ${await res.text()}`);
 }
@@ -47,6 +48,7 @@ async function sendSms(to: string, body: string): Promise<void> {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({ From: config.twilio.from, To: to, Body: body }),
+    signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`twilio ${res.status}: ${await res.text()}`);
 }

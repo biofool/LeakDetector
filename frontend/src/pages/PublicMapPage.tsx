@@ -50,11 +50,11 @@ export default function PublicMapPage() {
           </button>
         ))}
       </div>
-      <LeafletMap centre={[-41.28, 174.77]} zoom={12} markers={markers} onMarkerClick={(i) => nav(`/r/${reports[i].id}`)} />
+      <LeafletMap centre={[-41.28, 174.77]} zoom={12} markers={markers} onMarkerClick={(i) => nav(`/reports/${reports[i].id}`)} />
       <ul className="mt-4 space-y-2">
         {reports.slice(0, 20).map((r) => (
           <li key={r.id}>
-            <Link to={`/r/${r.id}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3">
+            <Link to={`/reports/${r.id}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3">
               <div>
                 <span className="text-sm font-medium text-slate-900">{r.ref}</span>
                 <span className="ml-2 text-xs text-slate-500">{timeAgo(r.created_at)}</span>

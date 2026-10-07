@@ -24,6 +24,11 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     });
     return;
   }
+  // malformed request body (express.json parse failure)
+  if (err instanceof SyntaxError && 'body' in err) {
+    res.status(400).json({ error: { code: 'validation_failed', message: 'invalid JSON body' } });
+    return;
+  }
   if (err instanceof MulterError) {
     // spec §3: 413 photo too large; other multipart violations are bad requests
     const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;

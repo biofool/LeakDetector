@@ -132,6 +132,11 @@ export default function PublicReportViewPage() {
           {new Date(report.sla_due_at).toLocaleString('en-NZ', { timeZone: 'Pacific/Auckland' })}
         </p>
       </section>
+      <p className="mt-4 text-center">
+        <Link to={`/r/${report.id}`} className="text-sm font-medium text-cyan-700 underline">
+          Seen this leak too? Open the tracking page
+        </Link>
+      </p>
     </main>
   );
 }

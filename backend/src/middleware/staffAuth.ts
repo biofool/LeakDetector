@@ -18,13 +18,16 @@ function bearer(req: Request): string | null {
 
 export function optionalStaff(req: Request, _res: Response, next: NextFunction): void {
   const token = bearer(req);
-  if (token) {
-    try {
-      const payload = jwt.verify(token, config.jwtSecret) as jwt.JwtPayload;
-      req.user = { id: payload.sub as string, role: payload.role, council_id: payload.council_id ?? null, display_name: payload.name };
-    } catch { /* invalid token → treat as public */ }
+  if (!token) return next(); // no header → public access
+  try {
+    const payload = jwt.verify(token, config.jwtSecret) as jwt.JwtPayload;
+    req.user = { id: payload.sub as string, role: payload.role, council_id: payload.council_id ?? null, display_name: payload.name };
+    next();
+  } catch {
+    // a present-but-invalid token means the caller thinks they're staff —
+    // don't silently downgrade them to the public view
+    next(new ApiError(401, 'invalid_token', 'token is invalid or expired'));
   }
-  next();
 }
 
 export function requireStaff(req: Request, _res: Response, next: NextFunction): void {
