@@ -7,9 +7,11 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
+    "start:worker": "node dist/src/worker.js",
+    "start:migrate": "node dist/src/migrate.js",
+    "start:seed": "node dist/scripts/seed.js",
     "worker": "tsx src/worker.ts",
-    "worker:built": "node dist/worker.js",
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx scripts/seed.ts",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest"
