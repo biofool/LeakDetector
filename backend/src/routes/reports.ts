@@ -13,6 +13,7 @@ import { zoneForPoint } from '../services/zones.js';
 import { findNearby, effectiveRadius } from '../services/duplicates.js';
 import { processPhoto, photoUrl } from '../services/photos.js';
 import { queue } from '../services/outbox.js';
+import { alertTargets } from '../services/submission.js';
 import { toReport } from '../util/serialize.js';
 import { toRef } from '../util/ref.js';
 import { LOCATIONS, SEVERITIES, STATUSES, OPEN_STATUSES } from '../types.js';
@@ -28,7 +29,8 @@ const upload = multer({
 const REPORT_SELECT = `
   SELECT r.*, ST_Y(r.geom) AS lat, ST_X(r.geom) AS lng,
          z.name AS zone_name, z.council_id, c.name AS council_name,
-         c.entity, c.contact_phone, c.contact_form_url, c.contact_app
+         c.entity, c.contact_phone, c.contact_form_url, c.contact_app,
+         c.submission_channel, c.channel_config
   FROM reports r
   JOIN council_zones z ON z.id = r.council_zone_id
   JOIN councils c ON c.id = z.council_id`;
@@ -127,14 +129,21 @@ router.post(
         // Reporter is CC'd on the authority alert when the contact is an
         // email address (#24). payload.cc → Postmark Cc in the worker.
         const cc = contact?.includes('@') ? contact : undefined;
-        const payload = { ref, category: input.category, severity: input.severity, tracking_url, zone: zone.name, sla_due_at, cc };
-        // Zones with no alert_emails fall back to ALERT_FALLBACK_EMAIL if set;
-        // otherwise no authority alert is queued (#25).
-        const alertEmails = zone.alert_emails.length
-          ? zone.alert_emails
-          : config.alertFallbackEmail ? [config.alertFallbackEmail] : [];
-        for (const email of alertEmails) {
-          await queue(client, { report_id: id, channel: 'email', recipient: email, template: 'new_report', payload, dedupe_key: `new_report:${id}:${email}` });
+        const payload = {
+          ref, category: input.category, severity: input.severity, tracking_url,
+          zone: zone.name, sla_due_at, cc, lat: input.lat, lng: input.lng,
+        };
+        // The council's submission_channel picks the intake adapter (#35);
+        // unimplemented channels and empty targets fall back to email.
+        for (const t of alertTargets(
+          zone.submission_channel, zone.channel_config,
+          zone.alert_emails, config.alertFallbackEmail,
+        )) {
+          await queue(client, {
+            report_id: id, channel: t.channel, recipient: t.recipient,
+            template: t.channel === 'sms' ? 'authority_sms' : 'new_report',
+            payload, dedupe_key: `new_report:${id}:${t.channel}:${t.recipient}`,
+          });
         }
         // Email-only notifications: phone-only reporters get no receipt.
         if (contact?.includes('@')) {
@@ -165,6 +174,8 @@ router.post(
             phone: zone.contact_phone,
             form_url: zone.contact_form_url,
             app: zone.contact_app,
+            sms_number: zone.submission_channel === 'sms'
+              ? (zone.channel_config?.sms_number ?? null) : null,
           },
         },
         sla_due_at,

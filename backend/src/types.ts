@@ -36,6 +36,8 @@ export interface ReportRow {
   contact_phone?: string | null;
   contact_form_url?: string | null;
   contact_app?: string | null;
+  submission_channel?: string;
+  channel_config?: { sms_number?: string } & Record<string, unknown>;
   nearby_open_count?: number | string;
 }
 

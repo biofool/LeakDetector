@@ -199,6 +199,7 @@ const en = {
     servicedBy: (name: string) => `Water services: ${name}`,
     callNow: 'Call',
     reportOnline: 'Report online →',
+    textCouncil: (num: string) => `Text it to ${num}`,
     appNote: (app: string) => `or report it in the ${app} app`,
   },
 
@@ -437,6 +438,7 @@ const mi: Messages = {
     servicedBy: (name: string) => `Ratonga wai: ${name}`,
     callNow: 'Waea',
     reportOnline: 'Pūronga tuihono →',
+    textCouncil: (num: string) => `Karakara ki ${num}`,
     appNote: (app: string) => `pūronga rānei i roto i te taupānga ${app}`,
   },
 

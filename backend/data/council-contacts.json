@@ -46,7 +46,9 @@
     "phone": "09 442 2222",
     "form_url": null,
     "app": null,
-    "notes": "Press 1 for faults; free text 3130; LiveChat on watercare.co.nz. Genuine dedicated faults mailbox."
+    "submission_channel": "sms",
+    "channel_config": { "sms_number": "3130", "email_to": ["faults@water.co.nz"] },
+    "notes": "Press 1 for faults; free text 3130; LiveChat on watercare.co.nz. Genuine dedicated faults mailbox. SMS 3130 confirmed on Auckland Council's flooding-report page and the NZ SMS shortcode directory (#35)."
   },
   "Christchurch City": {
     "entity": null,

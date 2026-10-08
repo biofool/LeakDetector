@@ -49,6 +49,7 @@ describe('council contacts', () => {
       phone: '0800 111 222',
       form_url: 'https://test.govt.nz/leak',
       app: 'TestApp',
+      sms_number: null,
     });
 
     const got = await request(app).get(`/api/v1/reports/${create.body.id}`);

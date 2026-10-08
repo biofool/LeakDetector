@@ -22,7 +22,8 @@
 | **Worker** (`/backend`, `npm run worker`) | Node (same package as API) | Drains the notification outbox every 30 s; runs the SLA sweep every 5 min; cascades resolution to duplicates. **[D-04]** |
 | **Database** | Postgres 16 + PostGIS | Reports, council zones, staff, outbox. Point-in-polygon zone lookup and 30 m duplicate search. |
 | **Photo storage** | S3-compatible bucket (e.g. Cloudflare R2, AWS S3) | Resized, EXIF-stripped photos and thumbnails. **[D-17]** |
-| **Email** | Postmark or AWS SES | Council alerts (reporter CC'd), SLA warnings, reporter receipts and "fixed" messages. Email only — the SMS/Twilio path was dropped (#24). |
+| **Email** | Postmark or AWS SES | Council alerts (reporter CC'd), SLA warnings, reporter receipts and "fixed" messages. Email only for reporter notifications — the SMS/Twilio path was dropped (#24). |
+| **Council submission** | `councils.submission_channel` adapters [D-20] | Authority alerts route per council: `email` (Postmark, universal baseline), `sms` (generic HTTPS SMS gateway — e.g. Watercare 3130), `form_automation`/`vendor_api` reserved (consent-gated; fall back to email). The tracking page also offers a reporter-side `sms:` deep link so the reporter can text it in from their own phone. |
 
 ### Deployment (Railway)
 
@@ -96,6 +97,12 @@ BEGIN NEW.updated_at := now(); RETURN NEW; END $$ LANGUAGE plpgsql;
 CREATE TABLE councils (
   id          int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   name        text NOT NULL UNIQUE,                       -- 'Wellington City Council'
+  entity           text,                                  -- servicing body (e.g. Tiaki Wai, Watercare) [#34]
+  contact_phone    text,
+  contact_form_url text,
+  contact_app      text,
+  submission_channel text NOT NULL DEFAULT 'email',       -- 'email'|'sms'|'form_automation'|'vendor_api' [D-20]
+  channel_config     jsonb NOT NULL DEFAULT '{}',         -- {sms_number, email_to, form_url, field_map, api_creds_ref}
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 

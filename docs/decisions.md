@@ -226,3 +226,11 @@ the text.
 - **Data:** `backend/data/council-contacts.json` keyed by Stats NZ TA name, applied by `scripts/import-contacts.ts` (`npm run contacts`). Verified contacts cover 11 TAs; all others keep empty `alert_emails` → `ALERT_FALLBACK_EMAIL`.
 - **API/UI:** report responses carry `council_zone.contact {entity, phone, form_url, app}`; the public tracking/status pages show a bilingual "urgent? contact the council" card only when channels exist.
 - **Open:** the Tiaki Wai direct mailbox is unconfirmed — the registry uses the legacy `customer@wellingtonwater.co.nz` until Tiaki Wai publishes its own. Snap Send Solve is the incumbent third-party app; no integration planned.
+
+<a id="d-20"></a>
+## D-20 — Council submission channels (#35)
+
+- **Issue #35 found:** no universal submission API exists for NZ councils — only Auckland publishes a dedicated faults mailbox; Watercare also takes free-text SMS at 3130. Form automation needs council consent; vendor APIs (Datascape/Authority/TechOne) need partnerships.
+- **Spec does:** `councils.submission_channel` picks one intake adapter per council: `email` (Postmark — universal baseline), `sms` (generic HTTPS `SMS_GATEWAY_URL` — POST `{to, text}`), `form_automation`/`vendor_api` reserved and fall back to email with a WARN. `channel_config` JSONB holds `{sms_number, email_to, form_url, field_map, api_creds_ref}`.
+- **Reporter-side SMS:** the tracking page shows a `sms:` deep link for SMS-channel councils — the reporter's own phone sends the text, so it's free and needs no gateway. Body carries category, lat/lng and the public `/r/:id` photo link.
+- **Photos:** SMS can't carry images; the public tracking URL is the photo link. Cloudflare R2 + Image Resizing is the intended host (S3-compatible `S3_*` config already covers it); optimization only applies when delivery passes through the CF edge on a proxied zone.

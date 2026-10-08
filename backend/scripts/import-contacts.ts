@@ -19,6 +19,8 @@ export interface CouncilContact {
   phone?: string | null;
   form_url?: string | null;
   app?: string | null;
+  submission_channel?: 'email' | 'sms' | 'form_automation' | 'vendor_api';
+  channel_config?: Record<string, unknown>;
   notes?: string;
 }
 
@@ -34,9 +36,12 @@ export async function applyContacts(
     if (name.startsWith('$')) continue;
     const { rows } = await db.query(
       `UPDATE councils
-       SET entity = $2, contact_phone = $3, contact_form_url = $4, contact_app = $5
+       SET entity = $2, contact_phone = $3, contact_form_url = $4, contact_app = $5,
+           submission_channel = COALESCE($6, submission_channel),
+           channel_config = COALESCE($7::jsonb, channel_config)
        WHERE name = $1 RETURNING id`,
-      [name, c.entity ?? null, c.phone ?? null, c.form_url ?? null, c.app ?? null],
+      [name, c.entity ?? null, c.phone ?? null, c.form_url ?? null, c.app ?? null,
+       c.submission_channel ?? null, c.channel_config ? JSON.stringify(c.channel_config) : null],
     );
     if (!rows.length) {
       missing.push(name);

@@ -12,6 +12,7 @@ export interface CouncilContact {
   phone: string | null;
   form_url: string | null;
   app: string | null;
+  sms_number: string | null;
 }
 
 export interface Report {

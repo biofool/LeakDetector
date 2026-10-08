@@ -3,6 +3,7 @@
 import { pool } from './db.js';
 import { config } from './config.js';
 import { queue, send } from './services/outbox.js';
+import { sendSms, smsBody } from './services/submission.js';
 import { toRef } from './util/ref.js';
 
 const TEMPLATES: Record<string, (p: Record<string, unknown>) => { subject: string; text: string }> = {
@@ -29,6 +30,11 @@ const TEMPLATES: Record<string, (p: Record<string, unknown>) => { subject: strin
   reporter_private: (p) => ({
     subject: `${p.ref} is on private property`,
     text: `${p.ref} was checked and the leak is on the owner’s side — please contact the owner or a plumber.`,
+  }),
+  // Compact authority SMS (e.g. Watercare 3130) — subject unused on sms [#35].
+  authority_sms: (p) => ({
+    subject: '',
+    text: smsBody({ category: String(p.category), lat: Number(p.lat), lng: Number(p.lng), tracking_url: String(p.tracking_url) }),
   }),
 };
 
@@ -59,19 +65,20 @@ async function drainOutbox(): Promise<void> {
         console.error(`[worker] outbox ${row.id} failed permanently: unknown template ${row.template}`);
         continue;
       }
-      // Email is the only live channel — legacy 'sms' rows (the Twilio path
-      // was removed, #24) can never send; fail them once.
-      if (row.channel !== 'email') {
+      // Channel adapters (#35): 'email' → Postmark, 'sms' → SMS gateway.
+      // Anything else is a permanent failure — never silently dropped.
+      if (row.channel !== 'email' && row.channel !== 'sms') {
         await client.query(
           `UPDATE notification_outbox SET status = 'failed', last_error = $1 WHERE id = $2`,
-          [`unsupported channel ${row.channel} — sms removed`, row.id],
+          [`unsupported channel ${row.channel}`, row.id],
         );
         console.warn(`[worker] outbox ${row.id} failed permanently: unsupported channel ${row.channel}`);
         continue;
       }
       // Missing provider config is not a delivery failure — don't burn
       // attempts; defer and leave the row pending (see .env.example).
-      if (!config.postmark.token) {
+      if ((row.channel === 'email' && !config.postmark.token)
+          || (row.channel === 'sms' && !config.smsGateway.url)) {
         await client.query(
           `UPDATE notification_outbox SET send_after = now() + interval '10 minutes' WHERE id = $1`,
           [row.id],
@@ -82,7 +89,11 @@ async function drainOutbox(): Promise<void> {
       const msg = TEMPLATES[row.template](row.payload ?? {});
       const cc = typeof row.payload?.cc === 'string' ? row.payload.cc : undefined;
       try {
-        await send(row.recipient, msg.subject, msg.text, cc);
+        if (row.channel === 'sms') {
+          await sendSms(row.recipient, msg.text);
+        } else {
+          await send(row.recipient, msg.subject, msg.text, cc);
+        }
         await client.query(
           `UPDATE notification_outbox SET status = 'sent', sent_at = now() WHERE id = $1`,
           [row.id],

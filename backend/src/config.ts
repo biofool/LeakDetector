@@ -33,6 +33,9 @@ export const config = {
   },
 
   postmark: { token: env('POSTMARK_TOKEN'), from: env('POSTMARK_FROM', 'leaks@localhost') },
+  // Generic HTTPS SMS gateway for councils on the 'sms' submission channel
+  // (#35) — POST {to, text}. Unset → sms rows defer like missing Postmark.
+  smsGateway: { url: env('SMS_GATEWAY_URL'), token: env('SMS_GATEWAY_TOKEN') },
   // Receives authority alerts when a zone's alert_emails is empty (real TA
   // boundaries import with none until councils supply duty addresses) [#25].
   alertFallbackEmail: env('ALERT_FALLBACK_EMAIL'),

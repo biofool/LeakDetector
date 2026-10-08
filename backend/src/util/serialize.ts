@@ -28,6 +28,10 @@ export function toReport(row: ReportRow & { lat: number; lng: number }, photos: 
         phone: row.contact_phone ?? null,
         form_url: row.contact_form_url ?? null,
         app: row.contact_app ?? null,
+        // Public SMS intake (e.g. Watercare 3130) — shown as a text-it-in
+        // action on the tracking page [#35].
+        sms_number: row.submission_channel === 'sms'
+          ? (row.channel_config?.sms_number ?? null) : null,
       },
     },
     verified: row.verified,
