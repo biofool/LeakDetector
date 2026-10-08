@@ -19,7 +19,17 @@ export function toReport(row: ReportRow & { lat: number; lng: number }, photos: 
     public_note: row.public_note,
     lat: row.lat,
     lng: row.lng,
-    council_zone: { id: row.council_zone_id, name: row.zone_name, council: row.council_name },
+    council_zone: {
+      id: row.council_zone_id,
+      name: row.zone_name,
+      council: row.council_name,
+      contact: {
+        entity: row.entity ?? null,
+        phone: row.contact_phone ?? null,
+        form_url: row.contact_form_url ?? null,
+        app: row.contact_app ?? null,
+      },
+    },
     verified: row.verified,
     is_duplicate_of: row.is_duplicate_of == null ? null : Number(row.is_duplicate_of),
     confirmation_count: row.confirmation_count,

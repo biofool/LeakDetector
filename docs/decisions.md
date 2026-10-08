@@ -218,3 +218,11 @@ the text.
 - **Why:** An AI implementer works best with explicit file paths, a fixed library list, small tasks, and a test for "done". Rule 1 in §6.1 ("do not invent") stops it filling gaps with guesses.
 - **Open:** What happens to the current FastAPI MVP in `app/` and `static/` — see [`spec-vs-mvp.md`](spec-vs-mvp.md#open-decisions).
 
+<a id="d-19"></a>
+## D-19 — Council contact registry: channel model (Addition — #34)
+
+- **Issue #34 found:** most NZ councils publish no dedicated leak mailbox; intake is phone-first (24/7 line), an online service-request form, or the Antenno app. Email is usually the general council inbox.
+- **Schema does:** `councils` gains `entity` (servicing body — e.g. Tiaki Wai vs the council itself), `contact_phone`, `contact_form_url`, `contact_app`. `council_zones.alert_emails` stays the email send target.
+- **Data:** `backend/data/council-contacts.json` keyed by Stats NZ TA name, applied by `scripts/import-contacts.ts` (`npm run contacts`). Verified contacts cover 11 TAs; all others keep empty `alert_emails` → `ALERT_FALLBACK_EMAIL`.
+- **API/UI:** report responses carry `council_zone.contact {entity, phone, form_url, app}`; the public tracking/status pages show a bilingual "urgent? contact the council" card only when channels exist.
+- **Open:** the Tiaki Wai direct mailbox is unconfirmed — the registry uses the legacy `customer@wellingtonwater.co.nz` until Tiaki Wai publishes its own. Snap Send Solve is the incumbent third-party app; no integration planned.

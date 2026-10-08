@@ -32,6 +32,10 @@ export interface ReportRow {
   zone_name?: string;
   council_id?: number;
   council_name?: string;
+  entity?: string | null;
+  contact_phone?: string | null;
+  contact_form_url?: string | null;
+  contact_app?: string | null;
   nearby_open_count?: number | string;
 }
 

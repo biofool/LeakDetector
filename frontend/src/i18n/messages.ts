@@ -195,6 +195,11 @@ const en = {
     notFoundBody: 'This report does not exist or may have been removed.',
     viewMap: '← View the map',
     statusHeading: 'Status',
+    contactHeading: 'Urgent? Contact the council directly',
+    servicedBy: (name: string) => `Water services: ${name}`,
+    callNow: 'Call',
+    reportOnline: 'Report online →',
+    appNote: (app: string) => `or report it in the ${app} app`,
   },
 
   staff: {
@@ -428,6 +433,11 @@ const mi: Messages = {
     notFoundBody: 'Kāore tēnei pūrongo i te tīariari, kua tangohia rānei.',
     viewMap: '← Tirohia te mapi',
     statusHeading: 'Tūnga',
+    contactHeading: 'He ohotata? Whakapā tōtika atu ki te kaunihera',
+    servicedBy: (name: string) => `Ratonga wai: ${name}`,
+    callNow: 'Waea',
+    reportOnline: 'Pūronga tuihono →',
+    appNote: (app: string) => `pūronga rānei i roto i te taupānga ${app}`,
   },
 
   staff: {

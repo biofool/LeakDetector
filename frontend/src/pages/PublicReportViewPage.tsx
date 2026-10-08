@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import LeafletMap from '../components/LeafletMap.js';
 import { StatusBadge, SlaBadge } from '../components/StatusBadge.js';
+import CouncilContact from '../components/CouncilContact.js';
 import { ApiError, getReport } from '../api/reports.js';
 import type { Report, Status } from '../api/reports.js';
 import { timeAgo } from '../util/format.js';
@@ -139,6 +140,7 @@ export default function PublicReportViewPage() {
           {new Date(report.sla_due_at).toLocaleString('en-NZ', { timeZone: 'Pacific/Auckland' })}
         </p>
       </section>
+      <CouncilContact report={report} />
       <p className="mt-4 text-center">
         <Link to={`/r/${report.id}`} className="text-sm font-medium text-cyan-700 underline">
           {m.statusPage.openTracking}

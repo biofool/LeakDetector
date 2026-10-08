@@ -1,0 +1,91 @@
+{
+  "$comment": "Verified NZ council water-leak reporting channels (issue #34). Keys are Stats NZ territorial-authority names matching councils.name. emails -> council_zones.alert_emails (send target); entity/phone/form_url/app -> councils columns. form_url stays null where the issue verified no canonical URL.",
+  "Wellington City": {
+    "entity": "Tiaki Wai",
+    "emails": ["customer@wellingtonwater.co.nz"],
+    "phone": "0800 842 549",
+    "form_url": null,
+    "app": null,
+    "notes": "0800 TIAKI WAI, urgent. Tiaki Wai takes over Wellington metro water services from 1 Jul 2026 (successor to Wellington Water); legacy Wellington Water mailbox — confirm the Tiaki Wai equivalent."
+  },
+  "Lower Hutt City": {
+    "entity": "Tiaki Wai",
+    "emails": ["customer@wellingtonwater.co.nz"],
+    "phone": "0800 842 549",
+    "form_url": null,
+    "app": null,
+    "notes": "0800 TIAKI WAI, urgent. Tiaki Wai takes over Wellington metro water services from 1 Jul 2026 (successor to Wellington Water); legacy Wellington Water mailbox — confirm the Tiaki Wai equivalent."
+  },
+  "Upper Hutt City": {
+    "entity": "Tiaki Wai",
+    "emails": ["customer@wellingtonwater.co.nz"],
+    "phone": "0800 842 549",
+    "form_url": null,
+    "app": null,
+    "notes": "0800 TIAKI WAI, urgent. Tiaki Wai takes over Wellington metro water services from 1 Jul 2026 (successor to Wellington Water); legacy Wellington Water mailbox — confirm the Tiaki Wai equivalent."
+  },
+  "Porirua City": {
+    "entity": null,
+    "emails": ["enquiries@poriruacity.govt.nz"],
+    "phone": "04 237 5089",
+    "form_url": null,
+    "app": "Antenno",
+    "notes": "24/7 line. Photos go by separate email attached to the service request. Also MyPorirua portal."
+  },
+  "Kapiti Coast District": {
+    "entity": null,
+    "emails": ["kapiti.council@kapiticoast.govt.nz"],
+    "phone": "04 296 4700 / 0800 486 486 (after hours)",
+    "form_url": null,
+    "app": "Antenno",
+    "notes": "Online portal also available."
+  },
+  "Auckland": {
+    "entity": "Watercare",
+    "emails": ["faults@water.co.nz"],
+    "phone": "09 442 2222",
+    "form_url": null,
+    "app": null,
+    "notes": "Press 1 for faults; free text 3130; LiveChat on watercare.co.nz. Genuine dedicated faults mailbox."
+  },
+  "Christchurch City": {
+    "entity": null,
+    "emails": ["info@ccc.govt.nz"],
+    "phone": "03 941 8999 / 0800 800 169",
+    "form_url": null,
+    "app": null,
+    "notes": "Online service requests also available."
+  },
+  "Hamilton City": {
+    "entity": null,
+    "emails": ["info@hcc.govt.nz"],
+    "phone": "07 838 6699",
+    "form_url": null,
+    "app": null,
+    "notes": "Call immediately if gushing. 'Report a water leak' online form also available."
+  },
+  "Tauranga City": {
+    "entity": null,
+    "emails": ["info@tauranga.govt.nz"],
+    "phone": "07 577 7000",
+    "form_url": null,
+    "app": null,
+    "notes": "24/7 line. Online 'Report a water problem' form also available."
+  },
+  "Dunedin City": {
+    "entity": null,
+    "emails": ["dcc@dcc.govt.nz"],
+    "phone": "03 477 4000",
+    "form_url": null,
+    "app": null,
+    "notes": "24/7 urgent line. 'Fix it' online form (water leaking category) also available."
+  },
+  "Nelson City": {
+    "entity": null,
+    "emails": ["enquiry@ncc.govt.nz"],
+    "phone": "03 546 0200",
+    "form_url": null,
+    "app": null,
+    "notes": "24/7 line."
+  }
+}

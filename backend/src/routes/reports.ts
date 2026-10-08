@@ -27,7 +27,8 @@ const upload = multer({
 
 const REPORT_SELECT = `
   SELECT r.*, ST_Y(r.geom) AS lat, ST_X(r.geom) AS lng,
-         z.name AS zone_name, z.council_id, c.name AS council_name
+         z.name AS zone_name, z.council_id, c.name AS council_name,
+         c.entity, c.contact_phone, c.contact_form_url, c.contact_app
   FROM reports r
   JOIN council_zones z ON z.id = r.council_zone_id
   JOIN councils c ON c.id = z.council_id`;
@@ -155,7 +156,17 @@ router.post(
         id: report.id,
         ref: report.ref,
         status: 'received',
-        council_zone: { id: zone.id, name: zone.name, council: zone.council_name },
+        council_zone: {
+          id: zone.id,
+          name: zone.name,
+          council: zone.council_name,
+          contact: {
+            entity: zone.entity,
+            phone: zone.contact_phone,
+            form_url: zone.contact_form_url,
+            app: zone.contact_app,
+          },
+        },
         sla_due_at,
         tracking_url: report.tracking_url,
         possible_duplicates: duplicates.map((d) => ({ id: d.id, distance_m: d.distance_m, status: d.status })),

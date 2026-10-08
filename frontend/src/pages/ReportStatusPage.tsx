@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import LeafletMap from '../components/LeafletMap.js';
 import { StatusBadge, SlaBadge } from '../components/StatusBadge.js';
+import CouncilContact from '../components/CouncilContact.js';
 import { getReport, confirmReport } from '../api/reports.js';
 import type { Report } from '../api/reports.js';
 import { timeAgo } from '../util/format.js';
@@ -71,6 +72,8 @@ export default function ReportStatusPage() {
           {new Date(report.sla_due_at).toLocaleString('en-NZ', { timeZone: 'Pacific/Auckland' })}
         </p>
       </div>
+
+      <CouncilContact report={report} />
 
       {open && !confirmed && (
         <button

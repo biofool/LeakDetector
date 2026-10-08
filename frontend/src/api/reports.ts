@@ -7,6 +7,13 @@ export type Severity = 'major' | 'minor';
 export type Status = 'received' | 'investigating' | 'contractor_assigned' | 'resolved' | 'closed_private';
 export type SlaStatus = 'on_track' | 'due_soon' | 'breached' | 'met' | 'missed' | 'n/a';
 
+export interface CouncilContact {
+  entity: string | null;
+  phone: string | null;
+  form_url: string | null;
+  app: string | null;
+}
+
 export interface Report {
   id: number;
   ref: string;
@@ -18,7 +25,7 @@ export interface Report {
   public_note: string | null;
   lat: number;
   lng: number;
-  council_zone: { id: number; name: string; council: string };
+  council_zone: { id: number; name: string; council: string; contact?: CouncilContact };
   verified: boolean;
   is_duplicate_of: number | null;
   confirmation_count: number;
@@ -53,7 +60,7 @@ export interface CreatedReport {
   id: number;
   ref: string;
   status: Status;
-  council_zone: { id: number; name: string; council: string };
+  council_zone: { id: number; name: string; council: string; contact?: CouncilContact };
   sla_due_at: string;
   tracking_url: string;
   possible_duplicates: { id: number; distance_m: number; status: Status }[];

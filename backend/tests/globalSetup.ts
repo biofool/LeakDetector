@@ -26,7 +26,11 @@ export default async function globalSetup() {
   for (const f of readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()) {
     await client.query(readFileSync(join(dir, f), 'utf8'));
   }
-  const { rows } = await client.query(`INSERT INTO councils (name) VALUES ('Demo City Council') RETURNING id`);
+  const { rows } = await client.query(
+    `INSERT INTO councils (name, entity, contact_phone, contact_form_url, contact_app)
+     VALUES ('Demo City Council', 'Demo Water Services', '0800 555 123', 'https://example.govt.nz/report-leak', 'Antenno')
+     RETURNING id`,
+  );
   await client.query(
     `INSERT INTO council_zones (council_id, name, boundary, alert_emails)
      VALUES ($1, 'Citywide', ST_GeomFromEWKT($2), '{duty@example.govt.nz}')`,
