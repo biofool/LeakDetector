@@ -8,13 +8,12 @@ export interface Zone {
   council_id: number;
   council_name: string;
   alert_emails: string[];
-  alert_sms: string[];
 }
 
 /** Smallest covering zone wins when zones overlap. Null when uncovered [D-11]. */
 export async function zoneForPoint(lng: number, lat: number): Promise<Zone | null> {
   const { rows } = await query(
-    `SELECT z.id, z.name, z.council_id, c.name AS council_name, z.alert_emails, z.alert_sms
+    `SELECT z.id, z.name, z.council_id, c.name AS council_name, z.alert_emails
      FROM council_zones z
      JOIN councils c ON c.id = z.council_id
      WHERE ST_Covers(z.boundary, ST_SetSRID(ST_MakePoint($1, $2), 4326))

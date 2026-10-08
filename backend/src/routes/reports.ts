@@ -115,19 +115,23 @@ router.post(
           );
         }
 
-        const payload = { ref, category: input.category, severity: input.severity, tracking_url, zone: zone.name, sla_due_at };
-        for (const email of zone.alert_emails) {
+        // Reporter is CC'd on the authority alert when the contact is an
+        // email address (#24). payload.cc → Postmark Cc in the worker.
+        const cc = contact?.includes('@') ? contact : undefined;
+        const payload = { ref, category: input.category, severity: input.severity, tracking_url, zone: zone.name, sla_due_at, cc };
+        // Zones with no alert_emails fall back to ALERT_FALLBACK_EMAIL if set;
+        // otherwise no authority alert is queued (#25).
+        const alertEmails = zone.alert_emails.length
+          ? zone.alert_emails
+          : config.alertFallbackEmail ? [config.alertFallbackEmail] : [];
+        for (const email of alertEmails) {
           await queue(client, { report_id: id, channel: 'email', recipient: email, template: 'new_report', payload, dedupe_key: `new_report:${id}:${email}` });
         }
-        if (input.severity === 'major') {
-          for (const sms of zone.alert_sms) {
-            await queue(client, { report_id: id, channel: 'sms', recipient: sms, template: 'new_report', payload, dedupe_key: `new_report:${id}:${sms}` });
-          }
-        }
-        if (contact) {
+        // Email-only notifications: phone-only reporters get no receipt.
+        if (contact?.includes('@')) {
           await queue(client, {
             report_id: id,
-            channel: contact.includes('@') ? 'email' : 'sms',
+            channel: 'email',
             recipient: contact,
             template: 'reporter_receipt',
             payload,
@@ -333,10 +337,10 @@ router.patch('/:id(\\d+)', requireStaff, async (req, res, next) => {
       // not on re-PATCH of an already-closed report.
       const closing =
         (patch.status === 'resolved' || patch.status === 'closed_private') && patch.status !== row.status;
-      if (closing && row.reporter_contact) {
+      if (closing && row.reporter_contact?.includes('@')) {
         await queue(client, {
           report_id: id,
-          channel: row.reporter_contact.includes('@') ? 'email' : 'sms',
+          channel: 'email',
           recipient: row.reporter_contact,
           template: patch.status === 'resolved' ? 'reporter_resolved' : 'reporter_private',
           payload: { ref },
@@ -352,10 +356,10 @@ router.patch('/:id(\\d+)', requireStaff, async (req, res, next) => {
           [patch.status, id],
         );
         for (const d of dups) {
-          if (d.reporter_contact) {
+          if (d.reporter_contact?.includes('@')) {
             await queue(client, {
               report_id: Number(d.id),
-              channel: d.reporter_contact.includes('@') ? 'email' : 'sms',
+              channel: 'email',
               recipient: d.reporter_contact,
               template: patch.status === 'resolved' ? 'reporter_resolved' : 'reporter_private',
               payload: { ref: toRef(d.id), parent_ref: ref },

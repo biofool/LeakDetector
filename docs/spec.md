@@ -18,11 +18,11 @@
 | Component | Tech | Responsibility |
 |---|---|---|
 | **PWA** (`/frontend`) | React + Vite + Tailwind, `vite-plugin-pwa` | Public reporting flow (`/`), public map (`/map`), staff dashboard (`/staff`). One codebase. |
-| **API** (`/backend`, `npm start`) | Node 20 + Express, `zod`, `pg`, `multer`, `sharp` | Validation, staff auth (JWT), all SQL, photo processing. Never sends email/SMS directly — writes to an outbox **[D-04]**. |
+| **API** (`/backend`, `npm start`) | Node 20 + Express, `zod`, `pg`, `multer`, `sharp` | Validation, staff auth (JWT), all SQL, photo processing. Never sends email directly — writes to an outbox **[D-04]**. |
 | **Worker** (`/backend`, `npm run worker`) | Node (same package as API) | Drains the notification outbox every 30 s; runs the SLA sweep every 5 min; cascades resolution to duplicates. **[D-04]** |
 | **Database** | Postgres 16 + PostGIS | Reports, council zones, staff, outbox. Point-in-polygon zone lookup and 30 m duplicate search. |
 | **Photo storage** | S3-compatible bucket (e.g. Cloudflare R2, AWS S3) | Resized, EXIF-stripped photos and thumbnails. **[D-17]** |
-| **Email / SMS** | Postmark or AWS SES; Twilio or an NZ SMS gateway | Council alerts, SLA warnings, reporter receipts and "fixed" messages. |
+| **Email** | Postmark or AWS SES | Council alerts (reporter CC'd), SLA warnings, reporter receipts and "fixed" messages. Email only — the SMS/Twilio path was dropped (#24). |
 
 ### Deployment (Railway)
 
@@ -30,7 +30,7 @@
 - Services deploy from one monorepo on push to `main` (production) or `staging` **[D-18]**. Root directory: `web` → `/frontend`; `api` and `worker` → `/backend` (same code, different start command).
 - `api` pre-deploy command: `npm run migrate` (`node-pg-migrate`).
 - File layout, scripts, local setup and build order: see §6.
-- Secrets live in Railway variables only: `DATABASE_URL`, `JWT_SECRET`, `S3_*`, `POSTMARK_TOKEN`, `TWILIO_*`, `PUBLIC_BASE_URL`.
+- Secrets live in Railway variables only: `DATABASE_URL`, `JWT_SECRET`, `S3_*`, `POSTMARK_TOKEN`, `PUBLIC_BASE_URL`.
 - **Data residency [D-15]:** Railway has no NZ region. Reporter contact details are personal information under the Privacy Act 2020 (IPP 12 covers sending it offshore). Confirm partner councils accept this before go-live.
 
 ```
@@ -48,8 +48,8 @@
  │ council_zones, users, notification_outbox                │
  └───────────────────────────▲──────────────────────────────┘
                              │ poll outbox (30 s) · SLA sweep (5 min)
- ┌───────────────────────────┴──────────────────────────────┐     Email (Postmark/SES)
- │ worker                                                   │────▶ SMS (Twilio / NZ gateway)
+ ┌───────────────────────────┴──────────────────────────────┐
+ │ worker                                                   │────▶ Email (Postmark/SES)
  └──────────────────────────────────────────────────────────┘
 ```
 
@@ -63,7 +63,7 @@
    2. Find the council zone with `ST_Covers`. No zone → `422` **[D-11]**.
    3. `computeSLA()` → `sla_due_at`.
    4. Resize photos, strip EXIF, upload to the bucket.
-   5. In **one transaction**: insert the report, the photos, and outbox rows (email to zone; SMS to zone if major; receipt to reporter if contact given).
+   5. In **one transaction**: insert the report, the photos, and outbox rows (email to the zone, CC'ing the reporter when `reporter_contact` is an email; receipt to the reporter when the contact is an email).
    6. Return `201` with reference and tracking URL.
 5. **Alert.** The worker claims pending outbox rows (`FOR UPDATE SKIP LOCKED`) and sends them. It retries with backoff up to 5 times, then marks the row `failed` and logs at ERROR.
 6. **Triage.** The staff dashboard polls `GET /reports?updated_since=…` every 30 s, sorted by `sla_due_at`. Staff verify, mark duplicates, and advance the status with `PATCH /reports/:id`.
@@ -105,7 +105,7 @@ CREATE TABLE council_zones (
   name          text NOT NULL,                            -- 'Central', 'Northern suburbs'
   boundary      geometry(MultiPolygon, 4326) NOT NULL,
   alert_emails  text[] NOT NULL DEFAULT '{}',
-  alert_sms     text[] NOT NULL DEFAULT '{}',             -- E.164, e.g. '+64211234567'
+  alert_sms     text[] NOT NULL DEFAULT '{}',             -- legacy, unused since #24 (email-only); pending drop
   created_at    timestamptz NOT NULL DEFAULT now(),
   UNIQUE (council_id, name)
 );
@@ -181,7 +181,7 @@ CREATE INDEX report_photos_report_idx ON report_photos (report_id);
 CREATE TABLE notification_outbox (
   id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   report_id   bigint REFERENCES reports(id) ON DELETE CASCADE,
-  channel     text NOT NULL CHECK (channel IN ('email','sms')),
+  channel     text NOT NULL CHECK (channel IN ('email','sms')),   -- 'sms' legacy only — new rows are always 'email'
   recipient   text NOT NULL,
   template    text NOT NULL,      -- new_report | sla_due_soon | sla_breached | reporter_receipt | reporter_resolved | reporter_private
   payload     jsonb NOT NULL DEFAULT '{}',
@@ -457,7 +457,7 @@ AND sla_due_at - now() <= LEAST(interval '2 hours', (sla_due_at - created_at) * 
 - `sla_due_at` is set on create. It is recalculated from `created_at` when staff change `severity` or `location_type`.
 - Duplicates and `closed_private` reports are excluded from SLA statistics.
 - The sweep sends each alert once per report and recipient (`dedupe_key` = `sla_due_soon:<id>:<recipient>` / `sla_breached:<id>:<recipient>`).
-- `due_soon` and `breached` go by email to the zone. `breached` on **major** reports also goes by SMS.
+- `due_soon` and `breached` go by email to the zone.
 
 ---
 
@@ -547,7 +547,7 @@ one starts.
 │   │   ├── middleware/          auth.js, rateLimit.js, errorHandler.js
 │   │   ├── routes/              auth.js, reports.js
 │   │   └── services/            zones.js, duplicates.js, photos.js, storage.js,
-│   │                            outbox.js, notify/email.js, notify/sms.js
+│   │                            outbox.js, notify/email.js
 │   └── test/                    vitest + supertest
 ├── frontend/                    React 18 + Vite + Tailwind, TypeScript
 │   ├── package.json
@@ -572,7 +572,7 @@ Frontend routes: `/` Report · `/r/:id` Track · `/map` PublicMap · `/staff/log
 
 | Package | Libraries |
 |---|---|
-| backend | `express`, `pg`, `zod`, `multer` (memory storage, 8 MB, 3 files), `sharp`, `@aws-sdk/client-s3`, `jsonwebtoken`, `argon2`, `express-rate-limit`, `helmet`, `cors`, `pino`, `pino-http`, `node-pg-migrate`, `postmark`, `twilio`; dev: `vitest`, `supertest` |
+| backend | `express`, `pg`, `zod`, `multer` (memory storage, 8 MB, 3 files), `sharp`, `@aws-sdk/client-s3`, `jsonwebtoken`, `argon2`, `express-rate-limit`, `helmet`, `cors`, `pino`, `pino-http`, `node-pg-migrate`, `postmark`; dev: `vitest`, `supertest` |
 | frontend | `react-router-dom`, `@tanstack/react-query` (30 s polling via `refetchInterval`), `leaflet` + `react-leaflet`, `browser-image-compression`, `tailwindcss`, `vite-plugin-pwa`; dev: `vitest`, `@testing-library/react` |
 
 Map tiles: LINZ Basemaps (NZ government, free API key) or another provider that allows production use. Do not use `tile.openstreetmap.org` for production traffic — its usage policy forbids heavy use.
@@ -587,7 +587,7 @@ Map tiles: LINZ Basemaps (NZ government, free API key) or another provider that 
 | `PUBLIC_BASE_URL` | backend | yes | Used in tracking links and messages |
 | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_BASE_URL` | backend | yes | MinIO locally |
 | `POSTMARK_TOKEN`, `EMAIL_FROM` | backend (worker) | no | Unset → worker logs WARNING and leaves email rows `pending` |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | backend (worker) | no | Unset → same as above for SMS |
+| `ALERT_FALLBACK_EMAIL` | backend | no | Authority-alert recipient for zones whose `alert_emails` is empty |
 | `VITE_API_BASE_URL` | frontend | yes | e.g. `https://api.leaks.example.nz/api/v1` |
 | `VITE_BASEMAP_URL` | frontend | yes | Tile URL template incl. key |
 
@@ -615,7 +615,7 @@ Local setup: `docker compose up -d` → `cd backend && cp .env.example .env && n
 | M4 | `GET /reports/nearby`, `POST /reports/:id/confirm` | Report 20 m away is returned, 40 m away is not; confirm on a resolved report → `409` |
 | M5 | Photos: multer → sharp → S3 | Uploaded JPEG comes back as webp with no EXIF (check with `exiftool`); 4th file → `400` |
 | M6 | `POST /auth/login`, auth middleware, `PATCH /reports/:id`, `GET /reports` filters | Every transition in §3 tested, allowed and refused; staff of council A get `403` on council B |
-| M7 | Outbox writes + worker + SLA sweep | New major report creates 1 email + 1 SMS row per zone recipient; a sweep run twice creates no extra rows; a failing provider moves a row to `failed` after 5 attempts |
+| M7 | Outbox writes + worker + SLA sweep | New report creates 1 email row per zone recipient (reporter CC'd via `payload.cc`); a sweep run twice creates no extra rows; a failing provider moves a row to `failed` after 5 attempts |
 | M8 | Frontend: Report flow (pin → duplicate sheet → form → success) | Works on a 360 px wide screen; "Yes, that's it" calls confirm and ends the flow |
 | M9 | Frontend: Track page and public map | Map shows open + 7-day resolved reports; no personal data in network responses |
 | M10 | Frontend: staff dashboard | Sorted by `sla_due_at`; 30 s polling; SLA and "Possible duplicate" badges; PATCH actions |
@@ -635,7 +635,7 @@ over the §6.2 CommonJS note. Recorded deltas:
 | `node-pg-migrate` | `src/migrate.ts` — applies `migrations/*.sql` with a `schema_migrations` ledger; `npm run migrate` / `start:migrate` |
 | `express-rate-limit` | `middleware/rateLimit.ts` — in-memory fixed window, per-route buckets |
 | `pino`, `pino-http`, `helmet` | `console.*` logging + request-log middleware; no helmet yet (API-only) |
-| `postmark`/`twilio` SDKs | `services/outbox.ts` calls their REST APIs via `fetch` — zero extra deps |
+| `postmark` SDK | `services/outbox.ts` calls the Postmark REST API via `fetch` — zero extra deps |
 | `docker-compose.yml` + MinIO | Docker `postgis/postgis` container; photos fall back to local `data/uploads` when `S3_*` unset |
 | `test/` + vitest | `tests/` + **Jest** + supertest |
 | `constants.js`, `serializers.js`, `server.js` | `types.ts`, `util/serialize.ts` (`toReport(row, photos, staff)`), `index.ts` |

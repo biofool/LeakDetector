@@ -5,7 +5,7 @@
 //
 // Default file: Stats NZ "Territorial Authority 2026 (clipped)" — fetched from
 // the open ArcGIS FeatureServer (see data/zones/README.md). One council row is
-// created per territorial authority; alert_emails/alert_sms start empty.
+// created per territorial authority; alert_emails start empty.
 // Idempotent: ON CONFLICT refreshes the boundary.
 import { readFileSync } from 'node:fs';
 import { pool } from '../src/db.js';

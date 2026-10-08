@@ -17,7 +17,7 @@ cd ../.. && npm run zones -- data/zones/raw/ta-2026.geojson
 
 Feature properties used: `TA2026_V1_00_NAME` → `councils.name` → zone `'All areas'`.
 `Area Outside Territorial Authority` is skipped. Alert recipients stay empty —
-fill `alert_emails`/`alert_sms` per council during a pilot.
+fill `alert_emails` per council during a pilot.
 
 Source: Stats NZ Geographic Data Service / ArcGIS Hub, "Territorial Authority
 2026" feature service (item `b7f8726da7f6467a9cb42221b0013938`). Check

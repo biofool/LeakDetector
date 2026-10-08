@@ -30,7 +30,9 @@ export const config = {
   },
 
   postmark: { token: env('POSTMARK_TOKEN'), from: env('POSTMARK_FROM', 'leaks@localhost') },
-  twilio: { sid: env('TWILIO_ACCOUNT_SID'), token: env('TWILIO_AUTH_TOKEN'), from: env('TWILIO_FROM') },
+  // Receives authority alerts when a zone's alert_emails is empty (real TA
+  // boundaries import with none until councils supply duty addresses) [#25].
+  alertFallbackEmail: env('ALERT_FALLBACK_EMAIL'),
 
   outboxIntervalMs: Number(env('OUTBOX_INTERVAL_MS', '30000')),
   slaSweepMs: Number(env('SLA_SWEEP_MS', '300000')),

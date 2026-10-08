@@ -74,6 +74,15 @@ the text.
   - Repo rule: *never fail silently* — failed sends stay visible in the table.
   - `dedupe_key` stops the SLA sweep sending the same breach alert every 5 min.
   - Uses Postgres only; no Redis or queue product to run on Railway.
+- **Update (#24):** Email-only. The Twilio/SMS path was removed on operator
+  direction — the `new_report` email to `zone.alert_emails` CCs the reporter
+  when `reporter_contact` is an email (Postmark `Cc`, carried in
+  `payload.cc`). Reporter templates queue only for email contacts;
+  phone-only contacts get no notification. `alert_sms` / the `sms` channel
+  value remain in the schema as legacy, pending a drop migration.
+- **Update (#25):** Zones with an empty `alert_emails` (all imported TA
+  boundaries until councils supply duty addresses) send authority alerts to
+  `ALERT_FALLBACK_EMAIL` when set; unset → no authority alert for the zone.
 - **Code impact:** Migration; `src/worker.js`; extra Railway service.
 
 <a id="d-05"></a>

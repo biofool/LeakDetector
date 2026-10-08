@@ -48,8 +48,6 @@ async function drainOutbox(): Promise<void> {
        ORDER BY id LIMIT 20
        FOR UPDATE SKIP LOCKED`,
     );
-    const providerMissing = (ch: string) =>
-      ch === 'email' ? !config.postmark.token : !(config.twilio.sid && config.twilio.token);
     let deferred = 0;
     for (const row of rows) {
       // Unknown template is a permanent failure — mark failed, never defer.
@@ -61,9 +59,19 @@ async function drainOutbox(): Promise<void> {
         console.error(`[worker] outbox ${row.id} failed permanently: unknown template ${row.template}`);
         continue;
       }
+      // Email is the only live channel — legacy 'sms' rows (the Twilio path
+      // was removed, #24) can never send; fail them once.
+      if (row.channel !== 'email') {
+        await client.query(
+          `UPDATE notification_outbox SET status = 'failed', last_error = $1 WHERE id = $2`,
+          [`unsupported channel ${row.channel} — sms removed`, row.id],
+        );
+        console.warn(`[worker] outbox ${row.id} failed permanently: unsupported channel ${row.channel}`);
+        continue;
+      }
       // Missing provider config is not a delivery failure — don't burn
       // attempts; defer and leave the row pending (see .env.example).
-      if (providerMissing(row.channel)) {
+      if (!config.postmark.token) {
         await client.query(
           `UPDATE notification_outbox SET send_after = now() + interval '10 minutes' WHERE id = $1`,
           [row.id],
@@ -72,8 +80,9 @@ async function drainOutbox(): Promise<void> {
         continue;
       }
       const msg = TEMPLATES[row.template](row.payload ?? {});
+      const cc = typeof row.payload?.cc === 'string' ? row.payload.cc : undefined;
       try {
-        await send(row.channel, row.recipient, msg.subject, msg.text);
+        await send(row.recipient, msg.subject, msg.text, cc);
         await client.query(
           `UPDATE notification_outbox SET status = 'sent', sent_at = now() WHERE id = $1`,
           [row.id],
@@ -113,7 +122,7 @@ async function slaSweep(): Promise<void> {
   try {
     const { rows } = await client.query(
       `SELECT r.id, r.category, r.severity, r.sla_due_at, z.name AS zone_name,
-              z.alert_emails, z.alert_sms,
+              z.alert_emails,
               CASE WHEN r.sla_due_at < now() THEN 'sla_breached' ELSE 'sla_due_soon' END AS tpl
        FROM reports r
        JOIN council_zones z ON z.id = r.council_zone_id
@@ -128,13 +137,11 @@ async function slaSweep(): Promise<void> {
         zone: r.zone_name, sla_due_at: r.sla_due_at,
         tracking_url: `${config.publicBaseUrl}/r/${r.id}`,
       };
-      for (const email of r.alert_emails) {
+      const alertEmails = (r.alert_emails as string[]).length
+        ? (r.alert_emails as string[])
+        : config.alertFallbackEmail ? [config.alertFallbackEmail] : [];
+      for (const email of alertEmails) {
         await queue(client, { report_id: Number(r.id), channel: 'email', recipient: email, template: r.tpl, payload, dedupe_key: `${r.tpl}:${r.id}:${email}` });
-      }
-      if (r.tpl === 'sla_breached' && r.severity === 'major') {
-        for (const sms of r.alert_sms) {
-          await queue(client, { report_id: Number(r.id), channel: 'sms', recipient: sms, template: r.tpl, payload, dedupe_key: `${r.tpl}:${r.id}:${sms}` });
-        }
       }
     }
   } catch (e) {

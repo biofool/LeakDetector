@@ -33,7 +33,7 @@ Target: `backend/` (Node/Express + PostGIS), not `legacy/` (FastAPI MVP).
 5. **Reporter notification.** After `resolved`, `notification_outbox`
    must hold a `reporter_resolved` row addressed to the report's
    `reporter_contact`. Worker drain log shows the send attempt.
-   Without `POSTMARK_TOKEN`/`TWILIO_*` providers can't deliver — the
+   Without `POSTMARK_TOKEN` the provider can't deliver — the
    outbox row + attempt log is the notification guarantee in dev.
 6. **Error loop.** If the log monitor flags an error: open a GitHub
    issue, fix, re-run the failing step.

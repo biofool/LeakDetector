@@ -26,34 +26,21 @@ export async function queue(client: pg.PoolClient | pg.Pool, item: OutboxItem): 
   );
 }
 
-// --- providers (worker side) -------------------------------------------------
+// --- provider (worker side) --------------------------------------------------
+// Email only — the SMS/Twilio path was removed (#24); the reporter is CC'd on
+// the authority alert instead. `cc` rides in the outbox payload.
 
-async function sendEmail(to: string, subject: string, text: string): Promise<void> {
+async function sendEmail(to: string, subject: string, text: string, cc?: string): Promise<void> {
   if (!config.postmark.token) throw new Error('POSTMARK_TOKEN not configured');
   const res = await fetch('https://api.postmarkapp.com/email', {
     method: 'POST',
     headers: { 'X-Postmark-Server-Token': config.postmark.token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ From: config.postmark.from, To: to, Subject: subject, TextBody: text }),
+    body: JSON.stringify({ From: config.postmark.from, To: to, Cc: cc, Subject: subject, TextBody: text }),
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`postmark ${res.status}: ${await res.text()}`);
 }
 
-async function sendSms(to: string, body: string): Promise<void> {
-  if (!config.twilio.sid || !config.twilio.token) throw new Error('TWILIO_* not configured');
-  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.twilio.sid}/Messages.json`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${config.twilio.sid}:${config.twilio.token}`).toString('base64')}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({ From: config.twilio.from, To: to, Body: body }),
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!res.ok) throw new Error(`twilio ${res.status}: ${await res.text()}`);
-}
-
-export async function send(channel: 'email' | 'sms', recipient: string, subject: string, text: string): Promise<void> {
-  if (channel === 'email') return sendEmail(recipient, subject, text);
-  return sendSms(recipient, text);
+export async function send(recipient: string, subject: string, text: string, cc?: string): Promise<void> {
+  return sendEmail(recipient, subject, text, cc);
 }
