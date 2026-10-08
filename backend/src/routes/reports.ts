@@ -155,6 +155,27 @@ router.post(
             payload,
           });
         }
+        // Volunteers registered in this zone get one heads-up email per
+        // report (#37) — capped at 20, dedupe_keyed per report+volunteer.
+        const { rows: volunteers } = await client.query(
+          `SELECT id, name, email, unsubscribe_token FROM volunteers
+           WHERE council_zone_id = $1 AND active ORDER BY id LIMIT 20`,
+          [zone.id],
+        );
+        for (const v of volunteers) {
+          await queue(client, {
+            report_id: id,
+            channel: 'email',
+            recipient: v.email,
+            template: 'volunteer_new_report',
+            payload: {
+              ...payload,
+              volunteer_name: v.name,
+              unsubscribe_url: `${config.apiPublicUrl}/api/v1/volunteers/unsubscribe?token=${v.unsubscribe_token}`,
+            },
+            dedupe_key: `volunteer_new_report:${id}:${v.id}`,
+          });
+        }
         return { id, ref, tracking_url };
       });
 

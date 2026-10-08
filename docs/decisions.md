@@ -234,3 +234,13 @@ the text.
 - **Spec does:** `councils.submission_channel` picks one intake adapter per council: `email` (Postmark — universal baseline), `sms` (generic HTTPS `SMS_GATEWAY_URL` — POST `{to, text}`), `form_automation`/`vendor_api` reserved and fall back to email with a WARN. `channel_config` JSONB holds `{sms_number, email_to, form_url, field_map, api_creds_ref}`.
 - **Reporter-side SMS:** the tracking page shows a `sms:` deep link for SMS-channel councils — the reporter's own phone sends the text, so it's free and needs no gateway. Body carries category, lat/lng and the public `/r/:id` photo link.
 - **Photos:** SMS can't carry images; the public tracking URL is the photo link. Cloudflare R2 + Image Resizing is the intended host (S3-compatible `S3_*` config already covers it); optimization only applies when delivery passes through the CF edge on a proxied zone.
+
+<a id="d-21"></a>
+## D-21 — Volunteer "power users" (#37)
+
+- **Issue #37 asks:** let community members register as volunteers — `hands_on` (help with the fix) or `routing` (help the report reach the right place).
+- **Schema does:** `volunteers` table — name, email, `council_zone_id`, `help_types volunteer_help[]`, optional note, `consent_staff_only` flag, `active`, `unsubscribe_token` (uuid). One row per `(lower(email), council_zone_id)`; a repeat signup upserts and re-activates.
+- **API:** `POST /api/v1/volunteers` (public, rate-limited 10/h per IP; zone by `council_zone_id` or `lat`+`lng`), `GET /api/v1/volunteers/unsubscribe?token=` (public, bilingual HTML confirmation), `GET /api/v1/volunteers` (staff JWT; council staff scoped to their council, `platform_admin` sees all + can filter), `GET /api/v1/councils` (public id/name-only zone picker — no emails).
+- **Notifications:** report create queues one `volunteer_new_report` email per active zone volunteer via the existing outbox/Postmark path — capped at 20 volunteers per report, dedupe-keyed per report+volunteer. Every email carries the unsubscribe link (`API_PUBLIC_URL`-rooted). Email only — no outbound SMS.
+- **Privacy:** volunteer contact details are staff-only. Signup returns the same generic response whether the email is new or already registered; no public endpoint returns volunteer PII.
+- **Out of scope (per issue):** volunteer accounts/login, ratings, scheduling, auto-assignment — staff-mediated for MVP.

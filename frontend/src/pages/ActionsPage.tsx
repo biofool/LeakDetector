@@ -30,6 +30,14 @@ export default function ActionsPage() {
                 </li>
               ))}
             </ul>
+            {'ctaTo' in mod && mod.ctaTo && (
+              <Link
+                to={mod.ctaTo}
+                className="mt-3 inline-block rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-medium text-white"
+              >
+                {mod.cta} →
+              </Link>
+            )}
           </section>
         ))}
       </div>

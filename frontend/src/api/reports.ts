@@ -148,6 +148,47 @@ export interface StaffSession {
 export const login = (email: string, password: string) =>
   req<StaffSession>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
 
+// --- volunteers (#37) --------------------------------------------------------
+
+export type HelpType = 'hands_on' | 'routing';
+
+export interface Council {
+  id: number;
+  name: string;
+  zones: { id: number; name: string }[];
+}
+
+export const listCouncils = () => req<{ results: Council[] }>('/councils');
+
+export interface VolunteerSignup {
+  name: string;
+  email: string;
+  council_zone_id?: number;
+  lat?: number;
+  lng?: number;
+  help_types: HelpType[];
+  note?: string;
+  consent: true;
+}
+
+export const signupVolunteer = (body: VolunteerSignup) =>
+  req<{ ok: boolean; council_zone: { id: number; name: string; council: string } }>(
+    '/volunteers', { method: 'POST', body: JSON.stringify(body) });
+
+export interface Volunteer {
+  id: number;
+  name: string;
+  email: string;
+  help_types: HelpType[];
+  note: string | null;
+  active: boolean;
+  council_zone: { id: number; name: string; council: string };
+  created_at: string;
+}
+
+export const listVolunteers = (token: string) =>
+  req<{ results: Volunteer[] }>('/volunteers', {}, token);
+
 const TOKEN_KEY = 'ld_staff_token';
 export const session = {
   get(): StaffSession | null {

@@ -70,7 +70,8 @@ const en = {
           { lead: 'Join a local group', rest: 'Stream care, planting, wetlands.' },
           { lead: 'Check your water quality', rest: 'LAWA and council websites.' },
         ],
-        cta: 'Find an action',
+        cta: 'Volunteer to help',
+        ctaTo: '/volunteer',
       },
     ],
   },
@@ -90,7 +91,7 @@ const en = {
       ],
     },
   },
-  nav: { report: 'Report a leak', map: 'Map', actions: 'Wai actions', settings: 'Settings' },
+  nav: { report: 'Report a leak', map: 'Map', actions: 'Wai actions', settings: 'Settings', volunteer: 'Volunteer' },
 
   labels: {
     location: {
@@ -230,6 +231,34 @@ const en = {
     dupPlaceholder: 'Duplicate of report id (e.g. 1042)',
     markDuplicate: 'Mark duplicate',
     noReports: 'No reports.',
+    volunteersTitle: 'Volunteers in your council',
+    volunteersNone: 'No volunteers registered yet.',
+    volunteerInactive: 'unsubscribed',
+  },
+
+  volunteerPage: {
+    title: 'Volunteer to help',
+    subtitle: 'Join the local crew — get an email when a leak is reported in your area.',
+    body: 'Two ways to help: hands-on locals can pitch in on the fix; routing helpers know which council, entity or channel a report should reach.',
+    nameLabel: 'Your name',
+    emailLabel: 'Email',
+    zoneLabel: 'Your area',
+    zonePlaceholder: 'Pick your council zone…',
+    helpLabel: 'How can you help?',
+    helpTypes: {
+      hands_on: 'Hands-on — help with the actual fix',
+      routing: 'Routing — help reports reach the right place',
+    },
+    noteLabel: 'Skills / notes (optional)',
+    notePlaceholder: 'e.g. plumber, stream-care group, know the council process',
+    consentLabel: 'I agree my contact details are shared with council staff only — they are never shown publicly.',
+    submit: 'Sign me up',
+    sending: 'Signing up…',
+    doneTitle: 'You’re on the list',
+    doneBody: (zone: string) =>
+      `Thanks — we’ll email you when a leak is reported in ${zone}. Every email includes an unsubscribe link.`,
+    submitError: 'Could not sign you up — please try again',
+    zonesFailed: 'Could not load council areas — check your connection and reload.',
   },
 } as const;
 
@@ -309,7 +338,8 @@ const mi: Messages = {
           { lead: 'Mahi tahi ki tētahi rōpū', rest: 'Tiaki awa, whakatipu rākau, whakatipu repo.' },
           { lead: 'Mātaki i tō kounga wai', rest: 'LAWA, paetukutuku a te kaunihera.' },
         ],
-        cta: 'Kitea tētahi mahi',
+        cta: 'Whakamahi hei kaiāwhina',
+        ctaTo: '/volunteer',
       },
     ],
   },
@@ -329,7 +359,7 @@ const mi: Messages = {
       ],
     },
   },
-  nav: { report: 'Pūrongo i tētahi rīki', map: 'Mapi', actions: 'Ngā mahi wai', settings: 'Tautuhinga' },
+  nav: { report: 'Pūrongo i tētahi rīki', map: 'Mapi', actions: 'Ngā mahi wai', settings: 'Tautuhinga', volunteer: 'Kaiāwhina' },
 
   labels: {
     location: {
@@ -469,6 +499,34 @@ const mi: Messages = {
     dupPlaceholder: 'He tuārite mō te pūrongo id (hei tauira: 1042)',
     markDuplicate: 'Tautohu tuārite',
     noReports: 'Kāore he pūrongo.',
+    volunteersTitle: 'Ngā kaiāwhina i tō kaunihera',
+    volunteersNone: 'Kāore anō he kaiāwhina kua rēhita.',
+    volunteerInactive: 'kua mutu',
+  },
+
+  volunteerPage: {
+    title: 'Whakamahi hei kaiāwhina',
+    subtitle: 'Hono mai ki te rōpū a-rohe — ka taea e koe te īmēra ina pūrongohia he rīki i tō rohe.',
+    body: 'E rua ngā huarahi āwhina: ka taea e te kaiāwhina ringa te whai wāhi ki te whakatikatika; mā te kaiāwhina whakawhiti te pūrongo e tae ki te wāhi tika.',
+    nameLabel: 'Tō ingoa',
+    emailLabel: 'Īmēra',
+    zoneLabel: 'Tō rohe',
+    zonePlaceholder: 'Kōwhiria tō rohe kaunihera…',
+    helpLabel: 'Me pēhea tō āwhina?',
+    helpTypes: {
+      hands_on: 'Ringa — āwhina i te whakatikatika ake',
+      routing: 'Whakawhiti — āwhina i ngā pūrongo kia tae ki te wāhi tika',
+    },
+    noteLabel: 'Pūkenga / kōrero (kōwhiringa)',
+    notePlaceholder: 'hei tauira: kaimahi wai (plumber), rōpū tiaki awa, e mōhio ana ki te tukanga kaunihera',
+    consentLabel: 'E whakaae ana au ka tukuna aku taipitopito whakapā ki ngā kaimahi kaunihera anake — kāore e whakaaturia ki te tūmatanui.',
+    submit: 'Rēhitatia au',
+    sending: 'E rēhita ana…',
+    doneTitle: 'Kei te rārangi koe',
+    doneBody: (zone: string) =>
+      `Ngā mihi — ka tukuna he īmēra ki a koe ina pūrongohia he rīki i ${zone}. Kei ia īmēra tētahi hononga whakamutu.`,
+    submitError: 'Kāore i taea te rēhita — ngānobarua',
+    zonesFailed: 'Kāore i taea te tiki i ngā rohe kaunihera — tirohia tō hononga, kātahi ka whakahōu.',
   },
 } as const;
 

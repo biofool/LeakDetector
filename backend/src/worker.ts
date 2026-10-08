@@ -31,6 +31,11 @@ const TEMPLATES: Record<string, (p: Record<string, unknown>) => { subject: strin
     subject: `${p.ref} is on private property`,
     text: `${p.ref} was checked and the leak is on the owner’s side — please contact the owner or a plumber.`,
   }),
+  // Volunteer heads-up (#37) — one email per report per zone volunteer.
+  volunteer_new_report: (p) => ({
+    subject: `[LeakDetector] Volunteer: new ${p.category} leak in ${p.zone} — ${p.ref}`,
+    text: `Kia ora ${p.volunteer_name},\n\nA new ${p.severity} ${p.category} leak was reported in ${p.zone}.\n${p.tracking_url}\n\nYou’re getting this because you registered as a LeakDetector volunteer — council staff may be in touch if your help is needed.\n\nUnsubscribe: ${p.unsubscribe_url}`,
+  }),
   // Compact authority SMS (e.g. Watercare 3130) — subject unused on sms [#35].
   authority_sms: (p) => ({
     subject: '',

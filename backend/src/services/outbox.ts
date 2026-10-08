@@ -6,7 +6,7 @@ import { config } from '../config.js';
 export type Template =
   | 'new_report' | 'sla_due_soon' | 'sla_breached'
   | 'reporter_receipt' | 'reporter_resolved' | 'reporter_private'
-  | 'authority_sms';
+  | 'authority_sms' | 'volunteer_new_report';
 
 export interface OutboxItem {
   report_id?: number | null;

@@ -16,6 +16,7 @@ export default function ReportLeakPage() {
         <div className="flex items-center gap-3">
           <LanguageToggle />
           <Link to="/actions" className="text-sm font-medium text-cyan-700 underline">{m.nav.actions}</Link>
+          <Link to="/volunteer" className="text-sm font-medium text-cyan-700 underline">{m.nav.volunteer}</Link>
           <Link to="/map" className="text-sm font-medium text-cyan-700 underline">{m.nav.map}</Link>
         </div>
       </header>

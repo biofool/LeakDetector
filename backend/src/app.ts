@@ -5,6 +5,8 @@ import helmet from 'helmet';
 import { config } from './config.js';
 import authRouter from './routes/auth.js';
 import reportsRouter from './routes/reports.js';
+import councilsRouter from './routes/councils.js';
+import volunteersRouter from './routes/volunteers.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 
 export function createApp() {
@@ -24,6 +26,8 @@ export function createApp() {
   app.get('/healthz', (_req, res) => res.json({ ok: true }));
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/reports', reportsRouter);
+  app.use('/api/v1/councils', councilsRouter);
+  app.use('/api/v1/volunteers', volunteersRouter);
   app.use(notFound);
   app.use(errorHandler);
   return app;

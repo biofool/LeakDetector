@@ -8,6 +8,23 @@ export type Location = (typeof LOCATIONS)[number];
 export type Severity = (typeof SEVERITIES)[number];
 export type Status = (typeof STATUSES)[number];
 
+// Volunteer "power user" help modes (#37) — mirror of the volunteer_help enum.
+export const HELP_TYPES = ['hands_on', 'routing'] as const;
+export type HelpType = (typeof HELP_TYPES)[number];
+
+export interface VolunteerRow {
+  id: number | string;
+  name: string;
+  email: string;
+  council_zone_id: number;
+  help_types: HelpType[];
+  note: string | null;
+  active: boolean;
+  unsubscribe_token: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ReportRow {
   id: number | string;
   geom: unknown;
