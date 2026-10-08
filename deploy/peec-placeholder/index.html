@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en-NZ">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0e7490" />
+    <meta name="robots" content="noindex" />
+    <title>LeakDetector — coming soon</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --brand: #0e7490;
+        --brand-text: #ffffff;
+        --border: #e2e8f0;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b1220;
+          --card: #111a2e;
+          --text: #e2e8f0;
+          --muted: #94a3b8;
+          --brand: #22b8d4;
+          --brand-text: #0b1220;
+          --border: #1e293b;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      main {
+        width: 100%;
+        max-width: 34rem;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 2rem 1.5rem;
+      }
+      header { display: flex; align-items: center; gap: 0.75rem; }
+      header img { width: 44px; height: 44px; }
+      h1 { font-size: 1.5rem; margin: 0; }
+      .badge {
+        display: inline-block;
+        margin-top: 1.25rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        border: 1px solid var(--brand);
+        color: var(--brand);
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      p { color: var(--muted); }
+      ul { color: var(--muted); padding-left: 1.2rem; }
+      a.button {
+        display: inline-block;
+        margin-top: 0.5rem;
+        padding: 0.65rem 1rem;
+        border-radius: 10px;
+        background: var(--brand);
+        color: var(--brand-text);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      a.button:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+      .note { font-size: 0.875rem; margin-top: 1.5rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <img src="icon.svg" alt="" />
+        <h1>LeakDetector</h1>
+      </header>
+      <span class="badge">NOT LIVE YET</span>
+      <p>
+        A citizen water-leak reporting app for New Zealand councils. Residents
+        drop a pin, take a photo, and report a leak in under 30 seconds.
+      </p>
+      <ul>
+        <li>Footpath, berm, road, meter and outside-tap leaks</li>
+        <li>Duplicate detection and SLA timers</li>
+        <li>Duty-officer email alerts and a public status map</li>
+      </ul>
+      <a class="button" href="https://github.com/biofool/LeakDetector">View the project on GitHub</a>
+      <p class="note">
+        To report a leak today, please contact your local council directly.
+      </p>
+    </main>
+  </body>
+</html>

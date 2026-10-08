@@ -16,6 +16,7 @@
     "worker": "tsx src/worker.ts",
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx scripts/seed.ts",
+    "zones": "tsx scripts/import-zones.ts",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest"
   },
   "dependencies": {

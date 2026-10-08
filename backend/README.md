@@ -15,6 +15,7 @@ docker run -d --name leakdetector-postgis \
 
 npm run migrate             # applies migrations/*.sql
 npm run seed                # demo council + zone + staff@example.govt.nz / password123
+npm run zones               # real NZ TA boundaries → councils + council_zones
 npm run dev                 # api on :8080
 npm run worker              # outbox drain + SLA sweep (separate process)
 ```

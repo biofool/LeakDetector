@@ -86,6 +86,8 @@ data/leakdetector.sqlite*
 data/uploads/
 data/audit/
 backend/data/uploads/
+# raw boundary downloads (re-fetchable — see backend/data/zones/README.md)
+backend/data/zones/raw/
 *.tsbuildinfo
 logs/
 test-results/
