@@ -1,6 +1,7 @@
 // backend/src/app.ts — express app, exported for tests; index.ts listens.
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { config } from './config.js';
 import authRouter from './routes/auth.js';
 import reportsRouter from './routes/reports.js';
@@ -9,7 +10,10 @@ import { errorHandler, notFound } from './middleware/errors.js';
 export function createApp() {
   const app = express();
   app.set('trust proxy', 1); // Railway runs behind a proxy (spec §3)
-  app.use(cors());
+  // crossOriginResourcePolicy must stay cross-origin — the PWA loads
+  // /uploads photos from this API on a different origin.
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  app.use(cors({ origin: config.corsOrigin === '*' ? true : config.corsOrigin.split(',') }));
   app.use(express.json({ limit: '1mb' }));
   app.use((req, res, next) => {
     const start = Date.now();

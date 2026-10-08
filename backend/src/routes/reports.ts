@@ -32,6 +32,10 @@ const REPORT_SELECT = `
   JOIN council_zones z ON z.id = r.council_zone_id
   JOIN councils c ON c.id = z.council_id`;
 
+const NEARBY_OPEN_COL = `, (SELECT count(*) FROM reports n WHERE n.id <> r.id AND n.is_duplicate_of IS NULL
+         AND n.status IN ('received','investigating','contractor_assigned')
+         AND ST_DWithin(n.geom::geography, r.geom::geography, 30)) AS nearby_open_count`;
+
 async function photosOf(reportId: number): Promise<PhotoRow[]> {
   const { rows } = await query('SELECT * FROM report_photos WHERE report_id = $1 ORDER BY id', [reportId]);
   return rows;
@@ -97,6 +101,10 @@ router.post(
         );
         const r = rows[0] as ReportRow;
         const id = Number(r.id);
+        await client.query(
+          'INSERT INTO report_status_history (report_id, from_status, to_status) VALUES ($1, NULL, $2)',
+          [id, 'received'],
+        );
         const ref = toRef(id);
         const tracking_url = `${config.publicBaseUrl}/r/${id}`;
 
@@ -202,7 +210,11 @@ router.get('/:id(\\d+)', optionalStaff, async (req, res, next) => {
     const row = rows[0];
     if (!row) throw new ApiError(404, 'not_found', 'report not found');
     const staff = Boolean(req.user && canAccess(req.user, row.council_id));
-    res.json(toReport(row, await photosOf(row.id), staff));
+    const { rows: history } = await query(
+      'SELECT from_status, to_status, changed_at FROM report_status_history WHERE report_id = $1 ORDER BY changed_at, id',
+      [req.params.id],
+    );
+    res.json(toReport(row, await photosOf(row.id), staff, history));
   } catch (e) {
     next(e);
   }
@@ -236,9 +248,12 @@ router.post(
   rateLimit('confirm', 10, 60 * 60 * 1000),
   async (req, res, next) => {
     try {
-      const { rows } = await query('SELECT id, status FROM reports WHERE id = $1', [req.params.id]);
+      const { rows } = await query('SELECT id, status, is_duplicate_of FROM reports WHERE id = $1', [req.params.id]);
       const r = rows[0];
       if (!r) throw new ApiError(404, 'not_found', 'report not found');
+      if (r.is_duplicate_of !== null) {
+        throw new ApiError(422, 'is_duplicate', 'this report is marked as a duplicate — confirm the original instead');
+      }
       if (r.status === 'resolved' || r.status === 'closed_private') {
         throw new ApiError(409, 'already_resolved', 'this report is already resolved');
       }
@@ -331,6 +346,12 @@ router.patch('/:id(\\d+)', requireStaff, async (req, res, next) => {
         vals,
       );
       const id = Number(out[0].id);
+      if (patch.status && patch.status !== row.status) {
+        await client.query(
+          'INSERT INTO report_status_history (report_id, from_status, to_status, changed_by) VALUES ($1, $2, $3, $4)',
+          [id, row.status, patch.status, req.user!.id],
+        );
+      }
       const ref = toRef(id);
 
       // Reporter messaging on closure — only on an actual status change,
@@ -352,9 +373,15 @@ router.patch('/:id(\\d+)', requireStaff, async (req, res, next) => {
         const { rows: dups } = await client.query(
           `UPDATE reports SET status = $1, resolved_at = now()
            WHERE is_duplicate_of = $2 AND status NOT IN ('resolved','closed_private')
-           RETURNING id, reporter_contact`,
+           RETURNING id, reporter_contact, status AS _from`,
           [patch.status, id],
         );
+        for (const d of dups) {
+          await client.query(
+            'INSERT INTO report_status_history (report_id, from_status, to_status, changed_by) VALUES ($1, $2, $3, $4)',
+            [Number(d.id), d._from, patch.status, req.user!.id],
+          );
+        }
         for (const d of dups) {
           if (d.reporter_contact?.includes('@')) {
             await queue(client, {
@@ -370,7 +397,10 @@ router.patch('/:id(\\d+)', requireStaff, async (req, res, next) => {
       return id;
     });
 
-    const { rows: final } = await query(`${REPORT_SELECT} WHERE r.id = $1`, [updated]);
+    const { rows: final } = await query(
+      `${REPORT_SELECT.replace('SELECT r.*,', `SELECT r.*${NEARBY_OPEN_COL},`)} WHERE r.id = $1`,
+      [updated],
+    );
     res.json(toReport(final[0], await photosOf(updated), true));
   } catch (e) {
     next(e);
@@ -457,11 +487,7 @@ router.get('/', optionalStaff, async (req, res, next) => {
     const orderBy = q.sort === 'sla_due_at' || (!q.sort && isStaff) ? 'r.sla_due_at ASC' : 'r.created_at DESC';
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
-    const extraCols = isStaff
-      ? `, (SELECT count(*) FROM reports n WHERE n.id <> r.id AND n.is_duplicate_of IS NULL
-           AND n.status IN ('received','investigating','contractor_assigned')
-           AND ST_DWithin(n.geom::geography, r.geom::geography, 30)) AS nearby_open_count`
-      : '';
+    const extraCols = isStaff ? NEARBY_OPEN_COL : '';
 
     const [countRes, listRes] = await Promise.all([
       query(

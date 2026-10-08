@@ -15,6 +15,9 @@ export const config = {
   databaseUrl: env('DATABASE_URL', 'postgres://postgres:postgres@127.0.0.1:5433/leakdetector'),
   publicBaseUrl: env('PUBLIC_BASE_URL', 'http://127.0.0.1:5173'),
   apiPublicUrl: env('API_PUBLIC_URL', 'http://127.0.0.1:8080'),
+  // Comma-separated allowed origins for CORS; '*' (default) suits the public
+  // API + Bearer auth. Set to the deployed web origin for tighter posture.
+  corsOrigin: env('CORS_ORIGIN', '*'),
 
   jwtSecret: env('JWT_SECRET', 'dev-insecure-secret'),
   jwtTtlHours: Number(env('JWT_TTL_HOURS', '8')),

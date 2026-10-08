@@ -165,3 +165,46 @@ describe('PATCH /api/v1/reports/:id', () => {
     expect(hours).toBeCloseTo(12, 0);
   });
 });
+
+describe('status history + confirm rules (D11/D15)', () => {
+  it('records create + transition rows in status_history', async () => {
+    const token = await staffToken();
+    const r = await makeReport();
+    const inv = await request(app)
+      .patch(`/api/v1/reports/${r.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'investigating' });
+    expect(inv.status).toBe(200);
+
+    const detail = await request(app).get(`/api/v1/reports/${r.id}`);
+    expect(detail.status).toBe(200);
+    const hist = detail.body.status_history as { from_status: string | null; to_status: string }[];
+    expect(hist.map((h) => [h.from_status, h.to_status])).toEqual([
+      [null, 'received'],
+      ['received', 'investigating'],
+    ]);
+  });
+
+  it('rejects confirm on a marked duplicate with 422', async () => {
+    const token = await staffToken();
+    const parent = await makeReport();
+    const child = await makeReport();
+    const link = await request(app)
+      .patch(`/api/v1/reports/${child.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ is_duplicate_of: parent.id });
+    expect(link.status).toBe(200);
+
+    const res = await request(app).post(`/api/v1/reports/${child.id}/confirm`);
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe('is_duplicate');
+    // Parent still confirms fine.
+    const ok = await request(app).post(`/api/v1/reports/${parent.id}/confirm`);
+    expect(ok.status).toBe(200);
+  });
+
+  it('serves security headers (helmet)', async () => {
+    const res = await request(app).get('/healthz');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+  });
+});

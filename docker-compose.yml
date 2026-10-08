@@ -1,0 +1,47 @@
+# Local dev stack: PostGIS + MinIO (S3-compatible photo storage).
+# API/worker run on the host (`npm run dev` / `npm run worker`) — compose
+# covers only the backing services. See backend/.env.example for env vars.
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: leakdetector-postgis
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: leakdetector
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d leakdetector"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: leakdetector-minio
+    ports:
+      - "9000:9000"    # S3 API
+      - "9001:9001"    # console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - miniodata:/data
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on: [minio]
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 minioadmin minioadmin; do sleep 2; done;
+      mc mb -p local/leakdetector-photos || true;
+      mc anonymous set download local/leakdetector-photos;
+      "
+
+volumes:
+  pgdata:
+  miniodata:

@@ -28,6 +28,7 @@ export interface Report {
   resolved_at: string | null;
   created_at: string;
   updated_at: string;
+  status_history?: { from_status: string | null; to_status: string; at: string }[];
   // staff-only
   reporter_name?: string | null;
   reporter_contact?: string | null;

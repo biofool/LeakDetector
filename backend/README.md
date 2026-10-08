@@ -8,7 +8,10 @@ Implements `docs/spec.md` §3 at `/api/v1`. Node 20+, TypeScript, ESM.
 npm install
 cp .env.example .env        # fill in DATABASE_URL at minimum
 
-# local Postgres+PostGIS via docker:
+# local stack via docker compose (PostGIS + MinIO):
+docker compose up -d          # postgres on :5433, MinIO S3 on :9000/:9001
+
+# or just PostGIS:
 docker run -d --name leakdetector-postgis \
   -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=leakdetector \
   -p 5433:5432 docker.io/postgis/postgis:16-3.5

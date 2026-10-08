@@ -120,6 +120,7 @@ async function drainOutbox(): Promise<void> {
 async function slaSweep(): Promise<void> {
   const client = await pool.connect();
   try {
+    await client.query('BEGIN');
     const { rows } = await client.query(
       `SELECT r.id, r.category, r.severity, r.sla_due_at, z.name AS zone_name,
               z.alert_emails,
@@ -144,7 +145,9 @@ async function slaSweep(): Promise<void> {
         await queue(client, { report_id: Number(r.id), channel: 'email', recipient: email, template: r.tpl, payload, dedupe_key: `${r.tpl}:${r.id}:${email}` });
       }
     }
+    await client.query('COMMIT');
   } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error('[worker] SLA sweep failed:', e);
   } finally {
     client.release();

@@ -20,14 +20,19 @@ function timeline(report: Report): Step[] {
   const steps: Status[] =
     report.status === 'closed_private' ? ['received', 'closed_private'] : FLOW;
   const current = steps.indexOf(report.status);
+  // status_history (from the API) carries real timestamps for intermediate
+  // transitions; fall back to created/resolved_at for older reports.
+  const hist = report.status_history ?? [];
+  const atFor = (status: Status): string | null =>
+    [...hist].reverse().find((h) => h.to_status === status)?.at ??
+    (status === 'received'
+      ? report.created_at
+      : status === 'resolved'
+        ? report.resolved_at
+        : null);
   return steps.map((status, i) => ({
     status,
-    at:
-      status === 'received'
-        ? report.created_at
-        : status === 'resolved'
-          ? report.resolved_at
-          : null,
+    at: atFor(status),
     state: i < current ? 'done' : i === current ? 'current' : 'next',
   }));
 }

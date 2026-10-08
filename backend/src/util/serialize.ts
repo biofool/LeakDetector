@@ -6,7 +6,7 @@ import { slaStatus } from '../services/sla.js';
 import { photoUrl } from '../services/photos.js';
 import type { ReportRow, PhotoRow } from '../types.js';
 
-export function toReport(row: ReportRow & { lat: number; lng: number }, photos: PhotoRow[], staff: boolean) {
+export function toReport(row: ReportRow & { lat: number; lng: number }, photos: PhotoRow[], staff: boolean, history: { from_status: string | null; to_status: string; changed_at: string }[] = []) {
   const visible = staff ? photos : photos.filter((p) => !p.is_hidden);
   const report: Record<string, unknown> = {
     id: Number(row.id),
@@ -29,6 +29,8 @@ export function toReport(row: ReportRow & { lat: number; lng: number }, photos: 
     resolved_at: row.resolved_at,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    // Public audit trail: status names + timestamps only (no staff identity).
+    status_history: history.map((h) => ({ from_status: h.from_status, to_status: h.to_status, at: h.changed_at })),
   };
   if (staff) {
     report.reporter_name = row.reporter_name;
