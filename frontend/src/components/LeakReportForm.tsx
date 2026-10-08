@@ -5,14 +5,15 @@ import LeafletMap from './LeafletMap.js';
 import NearbySheet from './NearbySheet.js';
 import { createReport, nearby } from '../api/reports.js';
 import type { CreatedReport, Location, NearbyResult, Severity } from '../api/reports.js';
-import { LOCATION_LABELS, SEVERITY_HELP } from '../util/format.js';
+import { useLang } from '../i18n/LanguageContext.js';
 
 type Step = 'locate' | 'duplicates' | 'details' | 'done' | 'confirmed';
 
-const LOCATIONS = Object.keys(LOCATION_LABELS) as Location[];
+const LOCATIONS: Location[] = ['footpath', 'berm', 'road', 'water_meter', 'outside_tap', 'other_public'];
 const NZ_CENTRE: [number, number] = [-41.28, 174.77]; // Wellington
 
 export default function LeakReportForm() {
+  const { m } = useLang();
   const [step, setStep] = useState<Step>('locate');
   const [pin, setPin] = useState<[number, number] | null>(null);
   const [accuracy, setAccuracy] = useState<number | undefined>();
@@ -77,7 +78,7 @@ export default function LeakReportForm() {
       setCreated(await createReport(form));
       setStep('done');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not submit — please try again');
+      setError(e instanceof Error ? e.message : m.form.submitError);
     } finally {
       setBusy(false);
     }
@@ -86,9 +87,9 @@ export default function LeakReportForm() {
   if (step === 'confirmed') {
     return (
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center">
-        <p className="font-semibold text-emerald-900">Thanks — the council already knows.</p>
+        <p className="font-semibold text-emerald-900">{m.form.alreadyKnown}</p>
         <a href={`/r/${confirmedId}`} className="mt-2 inline-block text-sm font-medium text-cyan-800 underline">
-          Track that report →
+          {m.form.trackThatReport}
         </a>
       </div>
     );
@@ -97,17 +98,16 @@ export default function LeakReportForm() {
   if (step === 'done' && created) {
     return (
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-        <p className="text-lg font-semibold text-emerald-900">Report sent — {created.ref}</p>
+        <p className="text-lg font-semibold text-emerald-900">{m.form.sent} — {created.ref}</p>
         <p className="mt-1 text-sm text-emerald-800">
-          Routed to {created.council_zone.council} ({created.council_zone.name}).
+          {m.form.routedTo(created.council_zone.council, created.council_zone.name)}
         </p>
         <a href={created.tracking_url} className="mt-3 inline-block rounded-lg bg-cyan-700 px-4 py-2 text-sm font-medium text-white">
-          Track your report →
+          {m.form.trackYours}
         </a>
         {created.possible_duplicates.length > 0 && (
           <p className="mt-3 text-xs text-slate-500">
-            Note: {created.possible_duplicates.length} similar open report
-            {created.possible_duplicates.length === 1 ? '' : 's'} nearby — staff will link them if it’s the same leak.
+            {m.form.similarNearby(created.possible_duplicates.length)}
           </p>
         )}
       </div>
@@ -118,8 +118,8 @@ export default function LeakReportForm() {
     <div className="space-y-4">
       {/* Step 1 — locate */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="font-semibold text-slate-900">1. Where is the leak?</h2>
-        <p className="mt-1 text-sm text-slate-500">Tap the map to drop a pin, then drag it to the exact spot.</p>
+        <h2 className="font-semibold text-slate-900">{m.form.step1Title}</h2>
+        <p className="mt-1 text-sm text-slate-500">{m.form.step1Help}</p>
         <div className="mt-3">
           <LeafletMap
             centre={pin ?? NZ_CENTRE}
@@ -134,7 +134,7 @@ export default function LeakReportForm() {
           onClick={checkNearby}
           className="mt-3 w-full rounded-lg bg-cyan-700 px-4 py-2.5 font-medium text-white disabled:opacity-40"
         >
-          {checking ? 'Checking nearby reports…' : pin ? 'Confirm this spot' : 'Tap the map to drop a pin'}
+          {checking ? m.form.checking : pin ? m.form.confirmSpot : m.form.dropPin}
         </button>
       </section>
 
@@ -151,7 +151,7 @@ export default function LeakReportForm() {
       {step === 'details' && (
         <>
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="font-semibold text-slate-900">2. Where is the water?</h2>
+            <h2 className="font-semibold text-slate-900">{m.form.step2Title}</h2>
             <div className="mt-2 grid grid-cols-2 gap-2">
               {LOCATIONS.map((loc) => (
                 <button
@@ -162,14 +162,14 @@ export default function LeakReportForm() {
                     category === loc ? 'border-cyan-700 bg-cyan-50 text-cyan-900' : 'border-slate-300 text-slate-700'
                   }`}
                 >
-                  {LOCATION_LABELS[loc]}
+                  {m.labels.location[loc]}
                 </button>
               ))}
             </div>
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="font-semibold text-slate-900">3. How bad is it?</h2>
+            <h2 className="font-semibold text-slate-900">{m.form.step3Title}</h2>
             {(['major', 'minor'] as Severity[]).map((s) => (
               <label key={s} className="mt-2 flex cursor-pointer gap-3 rounded-lg border border-slate-200 p-3">
                 <input
@@ -180,25 +180,25 @@ export default function LeakReportForm() {
                   className="mt-1"
                 />
                 <span>
-                  <span className="block text-sm font-medium capitalize text-slate-900">{s}</span>
-                  <span className="block text-xs text-slate-500">{SEVERITY_HELP[s]}</span>
+                  <span className="block text-sm font-medium text-slate-900">{m.labels.severity[s]}</span>
+                  <span className="block text-xs text-slate-500">{m.labels.severityHelp[s]}</span>
                 </span>
               </label>
             ))}
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="font-semibold text-slate-900">4. Details</h2>
+            <h2 className="font-semibold text-slate-900">{m.form.step4Title}</h2>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={1000}
               rows={3}
-              placeholder="e.g. water bubbling up through the berm, running down the gutter"
+              placeholder={m.form.descPlaceholder}
               className="mt-2 w-full rounded-lg border border-slate-300 p-2.5 text-sm"
             />
             <label className="mt-2 block text-sm font-medium text-slate-700">
-              Photos (up to 3 — helps the crew find it)
+              {m.form.photosLabel}
               <input
                 type="file"
                 accept="image/*"
@@ -212,14 +212,14 @@ export default function LeakReportForm() {
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Name (optional)"
+                placeholder={m.form.namePlaceholder}
                 maxLength={100}
                 className="rounded-lg border border-slate-300 p-2.5 text-sm"
               />
               <input
                 value={contact}
                 onChange={(e) => setContact(e.target.value)}
-                placeholder="Email or mobile (optional — for updates)"
+                placeholder={m.form.contactPlaceholder}
                 maxLength={200}
                 className="rounded-lg border border-slate-300 p-2.5 text-sm"
               />
@@ -234,7 +234,7 @@ export default function LeakReportForm() {
             onClick={submit}
             className="w-full rounded-xl bg-cyan-700 px-4 py-3 text-lg font-semibold text-white disabled:opacity-40"
           >
-            {busy ? 'Sending…' : 'Send report'}
+            {busy ? m.form.sending : m.form.send}
           </button>
         </>
       )}

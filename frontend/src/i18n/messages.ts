@@ -91,13 +91,149 @@ const en = {
     },
   },
   nav: { report: 'Report a leak', map: 'Map', actions: 'Wai actions', settings: 'Settings' },
+
+  labels: {
+    location: {
+      footpath: 'Footpath',
+      berm: 'Berm / verge',
+      road: 'Road',
+      water_meter: 'Water meter / toby',
+      outside_tap: 'Outside tap',
+      other_public: 'Other public place',
+    },
+    status: {
+      received: 'Received',
+      investigating: 'Investigating',
+      contractor_assigned: 'Contractor assigned',
+      resolved: 'Fixed',
+      closed_private: 'Private property',
+    },
+    sla: {
+      on_track: 'On track',
+      due_soon: 'Due soon',
+      breached: 'Overdue',
+      met: 'Fixed in time',
+      missed: 'Fixed late',
+      'n/a': '—',
+    },
+    severity: { major: 'Major', minor: 'Minor' },
+    severityHelp: {
+      major:
+        'Gushing or spraying; flowing across road or footpath; flooding property; a hole or sinking in the road; loss of pressure.',
+      minor: 'A steady trickle; damp or boggy berm; pooling water; a dripping meter or tap.',
+    },
+  },
+
+  time: {
+    justNow: 'just now',
+    minutesAgo: (n: number) => `${n} min ago`,
+    hoursAgo: (n: number) => `${n} hour${n === 1 ? '' : 's'} ago`,
+    daysAgo: (n: number) => `${n} day${n === 1 ? '' : 's'} ago`,
+  },
+
+  common: {
+    loading: 'Loading…',
+    reported: 'reported',
+    verifiedByCouncil: 'Verified by council',
+    seenByOthers: (n: number) => `Seen by ${n} other${n === 1 ? '' : 's'}`,
+    councilUpdate: 'Council update:',
+    slaDue: 'SLA due',
+    backToMap: '← Map',
+  },
+
+  reportPage: {
+    title: 'Report a water leak',
+    subtitle: 'Spotted a leak on public land? Tell the council in 30 seconds.',
+    privateNote: 'Leak on your own property? That’s the owner’s job — call a plumber.',
+  },
+
+  form: {
+    step1Title: '1. Where is the leak?',
+    step1Help: 'Tap the map to drop a pin, then drag it to the exact spot.',
+    checking: 'Checking nearby reports…',
+    confirmSpot: 'Confirm this spot',
+    dropPin: 'Tap the map to drop a pin',
+    step2Title: '2. Where is the water?',
+    step3Title: '3. How bad is it?',
+    step4Title: '4. Details',
+    descPlaceholder: 'e.g. water bubbling up through the berm, running down the gutter',
+    photosLabel: 'Photos (up to 3 — helps the crew find it)',
+    namePlaceholder: 'Name (optional)',
+    contactPlaceholder: 'Email or mobile (optional — for updates)',
+    sending: 'Sending…',
+    send: 'Send report',
+    submitError: 'Could not submit — please try again',
+    dupTitle: 'Is this the leak you’re reporting?',
+    dupHelp: 'These were reported nearby. Tap one if it’s the same leak — the council already knows.',
+    metresAway: 'm away',
+    seenBy: (n: number) => `seen by ${n} other${n === 1 ? '' : 's'}`,
+    fixedAgain: 'Fixed recently — is it leaking again?',
+    leakingAgain: 'It’s leaking again — report it',
+    yesThatsIt: 'Yes, that’s it',
+    different: 'No, mine’s different — continue',
+    alreadyKnown: 'Thanks — the council already knows.',
+    trackThatReport: 'Track that report →',
+    sent: 'Report sent',
+    routedTo: (council: string, zone: string) => `Routed to ${council} (${zone}).`,
+    trackYours: 'Track your report →',
+    similarNearby: (n: number) =>
+      `Note: ${n} similar open report${n === 1 ? '' : 's'} nearby — staff will link them if it’s the same leak.`,
+  },
+
+  mapPage: {
+    title: 'Leak map',
+    all: 'All',
+    dropOff: 'Fixed leaks drop off the map after 7 days.',
+  },
+
+  statusPage: {
+    iveSeenToo: 'I’ve seen this leak too',
+    confirmError: 'Could not record that — try again',
+    thanks: 'Thanks — noted.',
+    openTracking: 'Seen this leak too? Open the tracking page',
+    notFound: 'Report not found',
+    notFoundBody: 'This report does not exist or may have been removed.',
+    viewMap: '← View the map',
+    statusHeading: 'Status',
+  },
+
+  staff: {
+    signIn: 'Staff sign in',
+    emailPlaceholder: 'name@council.govt.nz',
+    password: 'Password',
+    signInButton: 'Sign in',
+    loginFailed: 'login failed',
+    dashboard: 'Duty dashboard',
+    refreshNote: 'refreshes every 30 s',
+    signOut: 'Sign out',
+    filterOpen: 'Open',
+    filterDueSoon: 'Due soon',
+    filterBreached: 'Overdue',
+    filterAll: 'All',
+    refreshFailed: 'Refresh failed — will retry in 30 s',
+    confirmations: (n: number) => `+${n} confirmations`,
+    possibleDuplicate: 'Possible duplicate',
+    verified: 'verified',
+    publicPage: 'public page →',
+    reporter: 'Reporter:',
+    hide: 'hide',
+    unverify: 'Unverify',
+    verify: 'Verify',
+    notePlaceholder: 'Public note (e.g. crew booked Thursday)',
+    post: 'Post',
+    dupPlaceholder: 'Duplicate of report id (e.g. 1042)',
+    markDuplicate: 'Mark duplicate',
+    noReports: 'No reports.',
+  },
 } as const;
 
 type Widen<T> = T extends string
   ? string
-  : T extends readonly (infer U)[]
-    ? readonly Widen<U>[]
-    : { [K in keyof T]: Widen<T[K]> };
+  : T extends (...args: never[]) => string
+    ? T
+    : T extends readonly (infer U)[]
+      ? readonly Widen<U>[]
+      : { [K in keyof T]: Widen<T[K]> };
 
 export type Messages = Widen<typeof en>;
 
@@ -188,6 +324,140 @@ const mi: Messages = {
     },
   },
   nav: { report: 'Pūrongo i tētahi rīki', map: 'Mapi', actions: 'Ngā mahi wai', settings: 'Tautuhinga' },
+
+  labels: {
+    location: {
+      footpath: 'Ara hīkoi',
+      berm: 'Pātītī tapa rori (berm)',
+      road: 'Rori',
+      water_meter: 'Mīta wai / toby',
+      outside_tap: 'Rīki wāwaho',
+      other_public: 'Wāhi tūmatanui kē atu',
+    },
+    status: {
+      received: 'Kua tae mai',
+      investigating: 'Kei te tūhuratia',
+      contractor_assigned: 'Kua tohua he kaitukumahi',
+      resolved: 'Kua whakatikatika',
+      closed_private: 'Whenua tūmataiti',
+    },
+    sla: {
+      on_track: 'Kei te haere pai',
+      due_soon: 'Me oti wawe',
+      breached: 'Kua hipa te wā',
+      met: 'I oti i te wā',
+      missed: 'I takaroa',
+      'n/a': '—',
+    },
+    severity: { major: 'Nui', minor: 'Iti' },
+    severityHelp: {
+      major:
+        'E pupū ana, e pīkari ana rānei; e rere ana puta noa i te rori, i te ara hīkoi rānei; e waipuke ana i te whenua; he rua, he tōngo rānei i te rori; kua ngaro te pēhanga wai.',
+      minor: 'He rere iti; he pātītī mākū, poipoi rānei; he wai e tū ana; he mīta, he rīki rānei e tūheke ana.',
+    },
+  },
+
+  time: {
+    justNow: 'nāianei tonu',
+    minutesAgo: (n: number) => `${n} meneti ki mua`,
+    hoursAgo: (n: number) => `${n} hāora ki mua`,
+    daysAgo: (n: number) => `${n} rā ki mua`,
+  },
+
+  common: {
+    loading: 'E tāuta ana…',
+    reported: 'i pūrongohia',
+    verifiedByCouncil: 'Kua whakaūngia e te kaunihera',
+    seenByOthers: (n: number) => `Kua kitea e ${n} atu`,
+    councilUpdate: 'Whakahōu a te kaunihera:',
+    slaDue: 'Me oti i mua i te',
+    backToMap: '← Mapi',
+  },
+
+  reportPage: {
+    title: 'Pūrongo i tētahi rīki wai',
+    subtitle: 'Kua kitea e koe he rīki i te wāhi tūmatanui? Whakamōhiotia te kaunihera i roto i te 30 hēkona.',
+    privateNote: 'He rīki i runga i tō ake whenua? Ko te mahi a te kaikainga tērā — waea atu ki tētahi kaimahi wai (plumber).',
+  },
+
+  form: {
+    step1Title: '1. Kei hea te rīki?',
+    step1Help: 'Pāwhiritia te mapi hei whakatakoto pine, kātahi ka tō kia tika te wāhi.',
+    checking: 'E tirotiro ana i ngā pūrongo tata…',
+    confirmSpot: 'Whakaūngia tēnei wāhi',
+    dropPin: 'Pāwhiritia te mapi hei whakatakoto pine',
+    step2Title: '2. Kei hea te wai?',
+    step3Title: '3. He pēhea te kaha?',
+    step4Title: '4. Ngā taipitopito',
+    descPlaceholder: 'hei tauira: he wai e pī ana puta i te pātītī, e rere ana i te tahataha',
+    photosLabel: 'Ngā whakaahua (kia 3 rawa — hei āwhina i te kaimahi ki te kimi)',
+    namePlaceholder: 'Ingoa (kōwhiringa)',
+    contactPlaceholder: 'Īmēra, waea pūkoro rānei (kōwhiringa — mō ngā whakahōu)',
+    sending: 'E tuku ana…',
+    send: 'Tukuna te pūrongo',
+    submitError: 'Kāore i taea te tuku — ngānobarua',
+    dupTitle: 'Koia tēnei te rīki e pūrongo ana koe?',
+    dupHelp: 'I pūrongohia ēnei i konei tata. Pāwhiritia tētahi mēnā ko te rīki kotahi — kua mōhio kē te kaunihera.',
+    metresAway: 'm te tawhiti',
+    seenBy: (n: number) => `kua kitea e ${n} atu`,
+    fixedAgain: 'I whakatikahia i nā tata — kei te rīki anō?',
+    leakingAgain: 'Kei te rīki anō — pūrongo i a ia',
+    yesThatsIt: 'Āe, koia tēnā',
+    different: 'Kāo, he rerekē tāku — haere tonu',
+    alreadyKnown: 'Ngā mihi — kua mōhio kē te kaunihera.',
+    trackThatReport: 'Aroturuki i taua pūrongo →',
+    sent: 'Kua tukuna te pūrongo',
+    routedTo: (council: string, zone: string) => `Kua whakawhiti ki ${council} (${zone}).`,
+    trackYours: 'Aroturuki i tō pūrongo →',
+    similarNearby: (n: number) =>
+      `Kia mōhio: ${n} pūrongo tuārite e tuwhera ana i konei tata — ka honoa e ngā kaimahi mēnā ko te rīki kotahi.`,
+  },
+
+  mapPage: {
+    title: 'Mapi rīki',
+    all: 'Katoa',
+    dropOff: 'Ka ngaro ngā rīki kua whakatikahia i te mapi i muri i te 7 rā.',
+  },
+
+  statusPage: {
+    iveSeenToo: 'Kua kitea e au anō tēnei rīki',
+    confirmError: 'Kāore i taea te hopu — ngānobarua',
+    thanks: 'Ngā mihi — kua hopukina.',
+    openTracking: 'Kua kitea e koe anō tēnei rīki? Whakatuwhera te whārangi aroturuki',
+    notFound: 'Kāore i kitea te pūrongo',
+    notFoundBody: 'Kāore tēnei pūrongo i te tīariari, kua tangohia rānei.',
+    viewMap: '← Tirohia te mapi',
+    statusHeading: 'Tūnga',
+  },
+
+  staff: {
+    signIn: 'Takiuru kaimahi',
+    emailPlaceholder: 'ingoa@kaunihera.govt.nz',
+    password: 'Kupu huna',
+    signInButton: 'Takiuru',
+    loginFailed: 'i rahua te takiuru',
+    dashboard: 'Papatohu mahi',
+    refreshNote: 'ka whakahōu ia 30 hēkona',
+    signOut: 'Takiputa',
+    filterOpen: 'Tuwhera',
+    filterDueSoon: 'Me oti wawe',
+    filterBreached: 'Kua hipa te wā',
+    filterAll: 'Katoa',
+    refreshFailed: 'I rahua te whakahōu — ka ngana anō i roto i te 30 hēkona',
+    confirmations: (n: number) => `+${n} whakaū`,
+    possibleDuplicate: 'Tāreia pea he tuārite',
+    verified: 'kua whakaūngia',
+    publicPage: 'whārangi tūmatanui →',
+    reporter: 'Kaipūrongo:',
+    hide: 'hunaia',
+    unverify: 'Whakakore whakaū',
+    verify: 'Whakaū',
+    notePlaceholder: 'Kōrero tūmatanui (hei tauira: kua waihanga te kaimahi mō te Rāpare)',
+    post: 'Tuku',
+    dupPlaceholder: 'He tuārite mō te pūrongo id (hei tauira: 1042)',
+    markDuplicate: 'Tautohu tuārite',
+    noReports: 'Kāore he pūrongo.',
+  },
 } as const;
 
 export const messages: Record<Lang, Messages> = { en, mi };

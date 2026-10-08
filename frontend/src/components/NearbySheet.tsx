@@ -2,8 +2,9 @@
 // (spec §5 reporter UX).
 import type { NearbyResult } from '../api/reports.js';
 import { confirmReport } from '../api/reports.js';
-import { timeAgo, LOCATION_LABELS } from '../util/format.js';
+import { timeAgo } from '../util/format.js';
 import { StatusBadge } from './StatusBadge.js';
+import { useLang } from '../i18n/LanguageContext.js';
 
 interface Props {
   results: NearbyResult[];
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function NearbySheet({ results, onDifferent, onConfirmed }: Props) {
+  const { m } = useLang();
   const confirm = async (id: number) => {
     try {
       await confirmReport(id);
@@ -24,10 +26,8 @@ export default function NearbySheet({ results, onDifferent, onConfirmed }: Props
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-900">Is this the leak you’re reporting?</h2>
-      <p className="mt-1 text-sm text-slate-500">
-        These were reported nearby. Tap one if it’s the same leak — the council already knows.
-      </p>
+      <h2 className="text-lg font-semibold text-slate-900">{m.form.dupTitle}</h2>
+      <p className="mt-1 text-sm text-slate-500">{m.form.dupHelp}</p>
       <ul className="mt-3 space-y-3">
         {results.map((r) => (
           <li key={r.id} className="flex gap-3 rounded-xl border border-slate-200 p-3">
@@ -36,24 +36,24 @@ export default function NearbySheet({ results, onDifferent, onConfirmed }: Props
             )}
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium text-slate-900">{LOCATION_LABELS[r.category]}</span>
+                <span className="font-medium text-slate-900">{m.labels.location[r.category]}</span>
                 <StatusBadge status={r.status} />
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                {r.ref} · {timeAgo(r.created_at)} · {Math.round(r.distance_m)} m away
-                {r.confirmation_count > 0 && ` · seen by ${r.confirmation_count} other${r.confirmation_count === 1 ? '' : 's'}`}
+                {r.ref} · {timeAgo(r.created_at, m.time)} · {Math.round(r.distance_m)} {m.form.metresAway}
+                {r.confirmation_count > 0 && ` · ${m.form.seenBy(r.confirmation_count)}`}
               </p>
               {r.status === 'resolved' ? (
                 <div className="mt-2">
                   <p className="text-sm font-medium text-amber-700">
-                    Fixed recently — is it leaking again?
+                    {m.form.fixedAgain}
                   </p>
                   <button
                     type="button"
                     onClick={onDifferent}
                     className="mt-1 rounded-lg border border-amber-600 px-3 py-1.5 text-sm font-medium text-amber-800"
                   >
-                    It’s leaking again — report it
+                    {m.form.leakingAgain}
                   </button>
                 </div>
               ) : (
@@ -62,7 +62,7 @@ export default function NearbySheet({ results, onDifferent, onConfirmed }: Props
                   onClick={() => confirm(r.id)}
                   className="mt-2 rounded-lg bg-cyan-700 px-3 py-1.5 text-sm font-medium text-white"
                 >
-                  Yes, that’s it
+                  {m.form.yesThatsIt}
                 </button>
               )}
             </div>
@@ -74,7 +74,7 @@ export default function NearbySheet({ results, onDifferent, onConfirmed }: Props
         onClick={onDifferent}
         className="mt-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
       >
-        No, mine’s different — continue
+        {m.form.different}
       </button>
     </div>
   );

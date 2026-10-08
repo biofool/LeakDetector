@@ -1,6 +1,7 @@
 // frontend/src/components/StatusBadge.tsx — status + SLA chips.
 import type { Status, SlaStatus } from '../api/reports.js';
-import { STATUS_LABELS, SLA_LABELS, SLA_COLOURS } from '../util/format.js';
+import { SLA_COLOURS } from '../util/format.js';
+import { useLang } from '../i18n/LanguageContext.js';
 
 const STATUS_COLOURS: Record<Status, string> = {
   received: 'bg-sky-100 text-sky-800',
@@ -11,17 +12,19 @@ const STATUS_COLOURS: Record<Status, string> = {
 };
 
 export function StatusBadge({ status }: { status: Status }) {
+  const { m } = useLang();
   return (
     <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLOURS[status]}`}>
-      {STATUS_LABELS[status]}
+      {m.labels.status[status]}
     </span>
   );
 }
 
 export function SlaBadge({ sla }: { sla: SlaStatus }) {
+  const { m } = useLang();
   return (
     <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${SLA_COLOURS[sla]}`}>
-      {SLA_LABELS[sla]}
+      {m.labels.sla[sla]}
     </span>
   );
 }
