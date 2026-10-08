@@ -2,7 +2,7 @@
 // the SLA sweep every 5 min [D-04]. Separate Railway service: `npm run worker`.
 import { pool } from './db.js';
 import { config } from './config.js';
-import { queue, send } from './services/outbox.js';
+import { emailConfigured, queue, send } from './services/outbox.js';
 import { sendSms, smsBody } from './services/submission.js';
 import { toRef } from './util/ref.js';
 
@@ -82,7 +82,7 @@ async function drainOutbox(): Promise<void> {
       }
       // Missing provider config is not a delivery failure — don't burn
       // attempts; defer and leave the row pending (see .env.example).
-      if ((row.channel === 'email' && !config.postmark.token)
+      if ((row.channel === 'email' && !emailConfigured())
           || (row.channel === 'sms' && !config.smsGateway.url)) {
         await client.query(
           `UPDATE notification_outbox SET send_after = now() + interval '10 minutes' WHERE id = $1`,

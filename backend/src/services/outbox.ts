@@ -31,8 +31,11 @@ export async function queue(client: pg.PoolClient | pg.Pool, item: OutboxItem): 
 // Email only — the SMS/Twilio path was removed (#24); the reporter is CC'd on
 // the authority alert instead. `cc` rides in the outbox payload.
 
-async function sendEmail(to: string, subject: string, text: string, cc?: string): Promise<void> {
-  if (!config.postmark.token) throw new Error('POSTMARK_TOKEN not configured');
+export function emailConfigured(): boolean {
+  return Boolean(config.cloudflare.token || config.postmark.token);
+}
+
+async function sendViaPostmark(to: string, subject: string, text: string, cc?: string): Promise<void> {
   const res = await fetch('https://api.postmarkapp.com/email', {
     method: 'POST',
     headers: { 'X-Postmark-Server-Token': config.postmark.token, 'Content-Type': 'application/json' },
@@ -40,6 +43,28 @@ async function sendEmail(to: string, subject: string, text: string, cc?: string)
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`postmark ${res.status}: ${await res.text()}`);
+}
+
+async function sendViaCloudflare(to: string, subject: string, text: string, cc?: string): Promise<void> {
+  const res = await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${config.cloudflare.accountId}/email/sending/send`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${config.cloudflare.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, from: config.cloudflare.from, cc, subject, text }),
+      signal: AbortSignal.timeout(15_000),
+    },
+  );
+  const body = (await res.json().catch(() => ({}))) as { success?: boolean; errors?: unknown };
+  if (!res.ok || body.success === false) {
+    throw new Error(`cloudflare ${res.status}: ${JSON.stringify(body.errors ?? body)}`);
+  }
+}
+
+async function sendEmail(to: string, subject: string, text: string, cc?: string): Promise<void> {
+  if (config.cloudflare.token) return sendViaCloudflare(to, subject, text, cc);
+  if (config.postmark.token) return sendViaPostmark(to, subject, text, cc);
+  throw new Error('no email provider configured (CF_API_TOKEN or POSTMARK_TOKEN)');
 }
 
 export async function send(recipient: string, subject: string, text: string, cc?: string): Promise<void> {

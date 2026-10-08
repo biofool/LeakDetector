@@ -244,3 +244,11 @@ the text.
 - **Notifications:** report create queues one `volunteer_new_report` email per active zone volunteer via the existing outbox/Postmark path — capped at 20 volunteers per report, dedupe-keyed per report+volunteer. Every email carries the unsubscribe link (`API_PUBLIC_URL`-rooted). Email only — no outbound SMS.
 - **Privacy:** volunteer contact details are staff-only. Signup returns the same generic response whether the email is new or already registered; no public endpoint returns volunteer PII.
 - **Out of scope (per issue):** volunteer accounts/login, ratings, scheduling, auto-assignment — staff-mediated for MVP.
+
+<a id="d-22"></a>
+## D-22 — Email provider: Cloudflare Email Service (Addition — #38)
+
+- **Issue #26 was blocked on a Postmark token.** Operator direction: use Cloudflare instead.
+- **Spec does:** the outbox worker picks a provider at send time — Cloudflare Email Service REST (`POST /accounts/{CF_ACCOUNT_ID}/email/sending/send`, bearer `CF_API_TOKEN`, `CF_EMAIL_FROM`) when `CF_API_TOKEN` is set, else Postmark, else rows stay pending (same defer behaviour). `cc` is supported on both paths (reporter CC on the authority alert).
+- **Sending domain:** `peec.biz` (Cloudflare zone `edf87345185e2625346570b26232ed2a`) — same domain as the PWA. Email Sending only writes `cf-bounce.peec.biz` records, so existing GreenGeeks MX/SPF are untouched.
+- **Operator steps (cannot be automated with current credentials):** onboard `peec.biz` to Email Sending in the Cloudflare dashboard, create an API token with the Email Sending permission, set `CF_ACCOUNT_ID`/`CF_API_TOKEN`/`CF_EMAIL_FROM` on the VM `.env`, restart the worker. Email Sending to arbitrary recipients requires the Workers Paid plan; a Free-plan account can only send to verified routing addresses.

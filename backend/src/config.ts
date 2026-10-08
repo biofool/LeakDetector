@@ -33,6 +33,14 @@ export const config = {
   },
 
   postmark: { token: env('POSTMARK_TOKEN'), from: env('POSTMARK_FROM', 'leaks@localhost') },
+  // Cloudflare Email Service (REST) — preferred provider when CF_API_TOKEN is
+  // set. POST /accounts/{id}/email/sending/send. From domain must be onboarded
+  // to Email Sending in the Cloudflare dashboard (cf-bounce records).
+  cloudflare: {
+    accountId: env('CF_ACCOUNT_ID'),
+    token: env('CF_API_TOKEN'),
+    from: env('CF_EMAIL_FROM', 'leaks@localhost'),
+  },
   // Generic HTTPS SMS gateway for councils on the 'sms' submission channel
   // (#35) — POST {to, text}. Unset → sms rows defer like missing Postmark.
   smsGateway: { url: env('SMS_GATEWAY_URL'), token: env('SMS_GATEWAY_TOKEN') },
