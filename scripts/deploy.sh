@@ -26,7 +26,7 @@ echo "== preflight: dependency audit =="
 bash scripts/audit-deps.sh
 
 echo "== build frontend (base=/LeakDetector/) =="
-(cd frontend && VITE_API_BASE_URL=/LeakDetector/api npx vite build --base=/LeakDetector/)
+(cd frontend && VITE_API_BASE_URL=/LeakDetector npx vite build --base=/LeakDetector/)
 
 DIST=$(mktemp -d)
 cp -r frontend/dist/* "$DIST/"
