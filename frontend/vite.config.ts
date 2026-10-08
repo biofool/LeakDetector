@@ -1,10 +1,22 @@
 import { defineConfig } from 'vitest/config';
+import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, '.');
+  return {
   plugins: [
+    {
+      name: 'html-public-url',
+      // %VITE_PUBLIC_URL% in index.html: absolute base for og:/twitter:
+      // preview URLs (WhatsApp requires absolute og:image). Empty in dev
+      // -> relative paths; set VITE_PUBLIC_URL=https://<domain> at deploy.
+      transformIndexHtml(html: string) {
+        return html.replace(/%VITE_PUBLIC_URL%/g, env.VITE_PUBLIC_URL ?? '');
+      },
+    },
     react(),
     tailwindcss(),
     VitePWA({
@@ -23,4 +35,5 @@ export default defineConfig({
   ],
   server: { host: '0.0.0.0', port: 5173 },
   test: { environment: 'node', include: ['src/**/*.test.ts?(x)'] },
+  };
 });
