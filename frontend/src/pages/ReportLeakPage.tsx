@@ -21,8 +21,21 @@ export default function ReportLeakPage() {
         </div>
       </header>
       <LeakReportForm />
+      <Link
+        to="/actions"
+        className="mt-4 block rounded-xl border border-cyan-100 bg-cyan-50 p-3 text-sm"
+      >
+        <span className="font-semibold text-cyan-900">{m.reportPage.actionsTitle}</span>
+        <span className="mt-0.5 block text-cyan-800">{m.reportPage.actionsBody}</span>
+        <span className="mt-1 inline-block font-medium text-cyan-700 underline">
+          {m.reportPage.actionsLink} →
+        </span>
+      </Link>
       <p className="mt-6 text-center text-xs text-slate-400">
-        {m.reportPage.privateNote}
+        {m.reportPage.privateNote}{' '}
+        <Link to="/welcome" className="underline">
+          {m.reportPage.introLink}
+        </Link>
       </p>
     </main>
   );

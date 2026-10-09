@@ -41,7 +41,7 @@ const en = {
         cards: [
           { lead: 'Shorten showers', rest: 'Aim for 4 minutes or less.' },
           { lead: 'Turn off the tap', rest: 'While brushing teeth or shaving.' },
-          { lead: 'Full loads only', rest: 'Washing machine and dishwasher.' },
+          { lead: 'Full loads only', rest: 'A dishwasher uses ~13 L per cycle whether half or full — wait till it’s full.' },
           { lead: 'Fix leaks', rest: 'A dripping tap? Repair it promptly.' },
           { lead: 'Low-flow showerhead', rest: 'Install a water-efficient head.' },
         ],
@@ -146,6 +146,10 @@ const en = {
     title: 'Report a water leak',
     subtitle: 'Spotted a leak on public land? Tell the council in 30 seconds.',
     privateNote: 'Leak on your own property? That’s the owner’s job — call a plumber.',
+    actionsTitle: 'Other ways to care for wai',
+    actionsBody: 'Use less water, keep pollutants out of drains, have your say in decisions.',
+    actionsLink: 'See Wai actions',
+    introLink: 'About this app',
   },
 
   form: {
@@ -309,7 +313,7 @@ const mi: Messages = {
         cards: [
           { lead: 'Whakapoto i ngā kaukau', rest: 'Whāia te 4 meneti, iti iho rānei.' },
           { lead: 'Kati te rīki', rest: 'I te wā o te horoi niho, te kanikani rānei.' },
-          { lead: 'Kī katoa ngā mīhini', rest: 'Horoi kākahu, rihi hoki ina kī.' },
+          { lead: 'Kī katoa ngā mīhini', rest: 'Tata ōrite te wai ahakoa haurua, kī rānei — tatari kia kī.' },
           { lead: 'Whakatikatika i ngā rīki', rest: 'He rīki e rere ana? Whakatikatika wawe.' },
           { lead: 'Upoko kaukau e whakaheke ana i te rere', rest: 'Tāutahia he upoko hou.' },
         ],
@@ -414,6 +418,10 @@ const mi: Messages = {
     title: 'Pūrongo i tētahi rīki wai',
     subtitle: 'Kua kitea e koe he rīki i te wāhi tūmatanui? Whakamōhiotia te kaunihera i roto i te 30 hēkona.',
     privateNote: 'He rīki i runga i tō ake whenua? Ko te mahi a te kaikainga tērā — waea atu ki tētahi kaimahi wai (plumber).',
+    actionsTitle: 'Ētahi atu huarahi tiaki wai',
+    actionsBody: 'Whakamahia te wai kia iti iho, kaua e tukuna ngā matū ki ngā rere, whai wāhi ki ngā whakatau.',
+    actionsLink: 'Tirohia ngā mahi wai',
+    introLink: 'Mō tēnei app',
   },
 
   form: {
