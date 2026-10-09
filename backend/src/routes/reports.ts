@@ -176,6 +176,22 @@ router.post(
             dedupe_key: `volunteer_new_report:${id}:${v.id}`,
           });
         }
+        // story_graph export (#43): built field by field, not spread from
+        // `payload`, so reporter contact (cc) and coordinates never leave.
+        if (config.storyGraphIngestEmail) {
+          await queue(client, {
+            report_id: id,
+            channel: 'email',
+            recipient: config.storyGraphIngestEmail,
+            template: 'story_graph_export',
+            payload: {
+              ref, tracking_url, category: input.category, severity: input.severity,
+              zone: zone.name, created_at: r.created_at,
+              api_url: `${config.apiPublicUrl}/api/v1/reports/${id}`,
+            },
+            dedupe_key: `story_graph:${id}`,
+          });
+        }
         return { id, ref, tracking_url };
       });
 

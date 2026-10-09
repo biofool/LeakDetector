@@ -27,6 +27,7 @@ API_PUBLIC_URL=https://peec.biz/LeakDetector
 UPLOAD_DIR=/data/uploads
 OUTBOX_INTERVAL_MS=30000
 SLA_SWEEP_MS=300000
+STORY_GRAPH_INGEST_EMAIL=corpus@aikifield.com
 ENV
   echo "created /opt/leakdetector/leakdetector.env"
 fi

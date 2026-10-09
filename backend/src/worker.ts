@@ -36,6 +36,15 @@ const TEMPLATES: Record<string, (p: Record<string, unknown>) => { subject: strin
     subject: `[LeakDetector] Volunteer: new ${p.category} leak in ${p.zone} — ${p.ref}`,
     text: `Kia ora ${p.volunteer_name},\n\nA new ${p.severity} ${p.category} leak was reported in ${p.zone}.\n${p.tracking_url}\n\nYou’re getting this because you registered as a LeakDetector volunteer — council staff may be in touch if your help is needed.\n\nUnsubscribe: ${p.unsubscribe_url}`,
   }),
+  // story_graph export (#43) — 64_ingest_from_r2.py fetches every URL in the
+  // subject/body, so api_url (public JSON) is the only URL: /r/{id} is a
+  // client-rendered SPA that yields no text to a non-JS fetcher. The public
+  // page is written scheme-less so a human can find it without the ingest
+  // picking it up as a second URL. Public fields only — never reporter contact.
+  story_graph_export: (p) => ({
+    subject: `[LeakDetector] ${p.ref} — ${p.severity} ${p.category} leak in ${p.zone}`,
+    text: `${p.api_url}\n\nref: ${p.ref}\ncategory: ${p.category}\nseverity: ${p.severity}\nzone: ${p.zone}\ncreated_at: ${p.created_at}\npublic page: ${String(p.tracking_url ?? '').replace(/^https?:\/\//, '')}\nsource: LeakDetector citizen water-leak report\n`,
+  }),
   // Compact authority SMS (e.g. Watercare 3130) — subject unused on sms [#35].
   authority_sms: (p) => ({
     subject: '',

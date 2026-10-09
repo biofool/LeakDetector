@@ -29,6 +29,7 @@ What the FastAPI + SQLite MVP in [`legacy/`](../legacy) does, versus what
 - **D-08** — SLA hours are placeholders; get each council's Long-Term Plan targets.
 - **D-11** — Reports outside all zones are rejected (`422`); confirm with product owner.
 - **D-15** — Railway has no NZ region; confirm data residency with partner councils (Privacy Act 2020, IPP 12).
+- **D-23** — story_graph export: email carries the public `GET /api/v1/reports/{id}` JSON URL (resolved — the `/r/{id}` SPA yields no text to a non-JS fetcher).
 
 ## Known MVP bugs (fixed by rewrite, not patched)
 

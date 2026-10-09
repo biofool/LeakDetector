@@ -47,6 +47,9 @@ export const config = {
   // Receives authority alerts when a zone's alert_emails is empty (real TA
   // boundaries import with none until councils supply duty addresses) [#25].
   alertFallbackEmail: env('ALERT_FALLBACK_EMAIL'),
+  // One public-fields-only export email per new report to the story_graph
+  // corpus ingest mailbox (#43). Empty → export disabled.
+  storyGraphIngestEmail: env('STORY_GRAPH_INGEST_EMAIL'),
 
   outboxIntervalMs: Number(env('OUTBOX_INTERVAL_MS', '30000')),
   slaSweepMs: Number(env('SLA_SWEEP_MS', '300000')),
