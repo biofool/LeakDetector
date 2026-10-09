@@ -41,7 +41,7 @@ const en = {
         cards: [
           { lead: 'Shorten showers', rest: 'Aim for 4 minutes or less.' },
           { lead: 'Turn off the tap', rest: 'While brushing teeth or shaving.' },
-          { lead: 'Full loads only', rest: 'A dishwasher uses ~13 L per cycle whether half or full — wait till it’s full.' },
+          { lead: 'Run it full', rest: 'A half-full dishwasher still uses a full ~13 L. Most households wait till it’s full.' },
           { lead: 'Fix leaks', rest: 'A dripping tap? Repair it promptly.' },
           { lead: 'Low-flow showerhead', rest: 'Install a water-efficient head.' },
         ],
@@ -313,7 +313,7 @@ const mi: Messages = {
         cards: [
           { lead: 'Whakapoto i ngā kaukau', rest: 'Whāia te 4 meneti, iti iho rānei.' },
           { lead: 'Kati te rīki', rest: 'I te wā o te horoi niho, te kanikani rānei.' },
-          { lead: 'Kī katoa ngā mīhini', rest: 'Tata ōrite te wai ahakoa haurua, kī rānei — tatari kia kī.' },
+          { lead: 'Whakahaerea ina kī', rest: 'Ahakoa haurua, ka whakamahi tonu te mīhini horoi rihi i te ~13 L — ko te nuinga o ngā kāinga ka tatari kia kī.' },
           { lead: 'Whakatikatika i ngā rīki', rest: 'He rīki e rere ana? Whakatikatika wawe.' },
           { lead: 'Upoko kaukau e whakaheke ana i te rere', rest: 'Tāutahia he upoko hou.' },
         ],
