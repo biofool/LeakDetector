@@ -32,6 +32,7 @@ DIST=$(mktemp -d)
 cp -r frontend/dist/* "$DIST/"
 cp deploy/peecbiz/htaccess "$DIST/.htaccess"
 cp deploy/peecbiz/api-proxy.php "$DIST/"
+cp deploy/peecbiz/report.php "$DIST/"
 
 if [ "$DRY" = 1 ]; then
   echo "== dryrun =="

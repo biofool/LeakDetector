@@ -265,3 +265,12 @@ the text.
 - **Receive-side bugs fixed in story_graph:** `fetch_page` advertised `Accept-Encoding: br` with no brotli decoder, so Cloudflare-compressed responses (including peec.biz) arrived as still-compressed bytes — fixed by dropping `br` from the header. Processed-object deletion scoped to leak exports — biofool/story_graph#134.
 - **Caveat:** `64_ingest_from_r2.py` deletes processed R2 objects. Fine for leak reports (graph-only), but the bucket is shared with the AIRichardMoon corpus — see biofool/story_graph#134 for the cleanup scoping.
 
+
+<a id="d-24"></a>
+## D-24 — No-JS public report pages
+
+- **Problem:** the SPA serves only a shell without JavaScript — the public tracking page `/r/{id}` and report view `/reports/{id}` rendered nothing for crawlers, no-JS browsers, and story_graph's fetcher (see D-23).
+- **Spec does:** `deploy/peecbiz/report.php` is a self-contained PHP page on the same host. `.htaccess` routes `^r/{id}` and `^reports/{id}` to it before the SPA fallback. It fetches `GET /api/v1/reports/{id}` from the same upstream as `api-proxy.php` (`$leak_api_origin` + optional `leak-proxy.local.php`) and renders the full report — ref, status, location + OSM link, description, SLA/verified/confirmation badges, public note, photos, council contact channels, status history, and the resolved banner.
+- **Confirm without JS:** the "I've seen it too" button is a plain `<form method="post">`; `report.php` forwards `POST /api/v1/reports/{id}/confirm` server-side and PRG-redirects back with `?confirmed=ok|duplicate|error`.
+- **Kept:** the SPA route stays for in-app navigation (JS users); `report.php` uses no JavaScript at all. `index.html` gains a `<noscript>` notice pointing at the tracking pages.
+- **story_graph export (D-23):** unchanged — the export email still carries the API JSON URL (richer for extraction), though `/r/{id}` would now also be ingestable.
