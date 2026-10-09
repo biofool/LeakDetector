@@ -22,7 +22,10 @@ function api(string $origin, string $path, string $method = 'GET'): array {
     CURLOPT_CUSTOMREQUEST => $method,
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_TIMEOUT => 15,
-    CURLOPT_HTTPHEADER => ['Accept: application/json'],
+    // Forward the visitor IP like api-proxy.php does — otherwise every no-JS
+    // confirm shares this host's IP and one 10/h rate-limit bucket.
+    CURLOPT_HTTPHEADER => ['Accept: application/json',
+      'X-Forwarded-For: ' . ($_SERVER['REMOTE_ADDR'] ?? ''), 'X-Forwarded-Proto: https'],
   ]);
   $body = curl_exec($ch);
   $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
