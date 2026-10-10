@@ -26,7 +26,9 @@ echo "== preflight: dependency audit =="
 bash scripts/audit-deps.sh
 
 echo "== build frontend (base=/LeakDetector/) =="
-(cd frontend && VITE_API_BASE_URL=/LeakDetector npx vite build --base=/LeakDetector/)
+# VITE_PUBLIC_URL makes og:/twitter: URLs absolute — unfurlers ignore
+# relative og:image (#28).
+(cd frontend && VITE_API_BASE_URL=/LeakDetector VITE_PUBLIC_URL=https://peec.biz/LeakDetector npx vite build --base=/LeakDetector/)
 
 DIST=$(mktemp -d)
 cp -r frontend/dist/* "$DIST/"
