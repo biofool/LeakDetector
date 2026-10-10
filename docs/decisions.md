@@ -242,7 +242,7 @@ the text.
 - **Schema does:** `volunteers` table — name, email, `council_zone_id`, `help_types volunteer_help[]`, optional note, `consent_staff_only` flag, `active`, `unsubscribe_token` (uuid). One row per `(lower(email), council_zone_id)`; a repeat signup upserts and re-activates.
 - **API:** `POST /api/v1/volunteers` (public, rate-limited 10/h per IP; zone by `council_zone_id` or `lat`+`lng`), `GET /api/v1/volunteers/unsubscribe?token=` (public, bilingual HTML confirmation), `GET /api/v1/volunteers` (staff JWT; council staff scoped to their council, `platform_admin` sees all + can filter), `GET /api/v1/councils` (public id/name-only zone picker — no emails).
 - **Notifications:** report create queues one `volunteer_new_report` email per active zone volunteer via the existing outbox/Postmark path — capped at 20 volunteers per report, dedupe-keyed per report+volunteer. Every email carries the unsubscribe link (`API_PUBLIC_URL`-rooted). Email only — no outbound SMS.
-- **Privacy:** volunteer contact details are staff-only. Signup returns the same generic response whether the email is new or already registered; no public endpoint returns volunteer PII.
+- **Privacy:** volunteer contact details are staff-only. Signup returns the same generic response whether the email is new or already registered; no public endpoint returns volunteer PII. The volunteer email payload is built field by field (no reporter `cc`), and the worker only honours `payload.cc` on the `new_report` authority alert — before #44 the reporter was CC'd on every volunteer email.
 - **Out of scope (per issue):** volunteer accounts/login, ratings, scheduling, auto-assignment — staff-mediated for MVP.
 
 <a id="d-22"></a>

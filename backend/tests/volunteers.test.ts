@@ -117,6 +117,26 @@ describe('volunteer_new_report outbox', () => {
     expect(rows[0].payload.unsubscribe_url).toContain('/api/v1/volunteers/unsubscribe?token=');
     expect(rows[0].dedupe_key).toMatch(/^volunteer_new_report:\d+:\d+$/);
   });
+
+  it('never carries the reporter contact (#44)', async () => {
+    const create = await request(app)
+      .post('/api/v1/reports')
+      .field('category', 'berm').field('severity', 'minor')
+      .field('lat', String(WLG.lat)).field('lng', String(WLG.lng))
+      .field('reporter_name', 'Secret Person')
+      .field('reporter_contact', 'secret.reporter@example.nz');
+    expect(create.status).toBe(201);
+    const { rows } = await pool.query(
+      `SELECT payload FROM notification_outbox
+       WHERE report_id = $1 AND template = 'volunteer_new_report'`,
+      [create.body.id],
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    for (const r of rows) {
+      expect(r.payload.cc).toBeUndefined();
+      expect(JSON.stringify(r.payload)).not.toMatch(/secret\.reporter|Secret Person/);
+    }
+  });
 });
 
 describe('GET /api/v1/volunteers/unsubscribe', () => {

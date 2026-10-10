@@ -101,7 +101,10 @@ async function drainOutbox(): Promise<void> {
         continue;
       }
       const msg = TEMPLATES[row.template](row.payload ?? {});
-      const cc = typeof row.payload?.cc === 'string' ? row.payload.cc : undefined;
+      // Only the authority alert may Cc the reporter (#24); never any other
+      // template, even if a payload carries `cc` (#44).
+      const cc = row.template === 'new_report' && typeof row.payload?.cc === 'string'
+        ? row.payload.cc : undefined;
       try {
         if (row.channel === 'sms') {
           await sendSms(row.recipient, msg.text);

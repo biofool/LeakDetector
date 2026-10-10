@@ -168,8 +168,11 @@ router.post(
             channel: 'email',
             recipient: v.email,
             template: 'volunteer_new_report',
+            // Field by field, not `...payload`: that carries `cc` (the
+            // reporter's email), which the worker would send as Cc (#44).
             payload: {
-              ...payload,
+              ref, category: input.category, severity: input.severity,
+              tracking_url, zone: zone.name,
               volunteer_name: v.name,
               unsubscribe_url: `${config.apiPublicUrl}/api/v1/volunteers/unsubscribe?token=${v.unsubscribe_token}`,
             },
