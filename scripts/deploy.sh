@@ -28,7 +28,10 @@ bash scripts/audit-deps.sh
 echo "== build frontend (base=/LeakDetector/) =="
 # VITE_PUBLIC_URL makes og:/twitter: URLs absolute — unfurlers ignore
 # relative og:image (#28).
-(cd frontend && VITE_API_BASE_URL=/LeakDetector VITE_PUBLIC_URL=https://peec.biz/LeakDetector npx vite build --base=/LeakDetector/)
+# VITE_LINZ_BASEMAPS_KEY: LINZ Developer key (#29), from the caller's env —
+# it ships in tile URLs (site-restricted), but stays out of the repo.
+[ -n "${VITE_LINZ_BASEMAPS_KEY:-}" ] || echo "WARNING: VITE_LINZ_BASEMAPS_KEY unset — map falls back to OSM public tiles (not allowed for production traffic, #29)" >&2
+(cd frontend && VITE_API_BASE_URL=/LeakDetector VITE_PUBLIC_URL=https://peec.biz/LeakDetector VITE_LINZ_BASEMAPS_KEY="${VITE_LINZ_BASEMAPS_KEY:-}" npx vite build --base=/LeakDetector/)
 
 DIST=$(mktemp -d)
 cp -r frontend/dist/* "$DIST/"

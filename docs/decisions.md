@@ -274,3 +274,11 @@ the text.
 - **Confirm without JS:** the "I've seen it too" button is a plain `<form method="post">`; `report.php` forwards `POST /api/v1/reports/{id}/confirm` server-side and PRG-redirects back with `?confirmed=ok|duplicate|error`.
 - **Kept:** the SPA route stays for in-app navigation (JS users); `report.php` uses no JavaScript at all. `index.html` gains a `<noscript>` notice pointing at the tracking pages.
 - **story_graph export (D-23):** unchanged — the export email still carries the API JSON URL (richer for extraction), though `/r/{id}` would now also be ingestable.
+
+<a id="d-25"></a>
+## D-25 — Basemap: LINZ Basemaps (#29)
+
+- **Problem:** the map used OpenStreetMap's public tile servers, whose usage policy forbids production/heavy traffic.
+- **Spec does:** `LeafletMap` uses LINZ Basemaps XYZ (`https://basemaps.linz.govt.nz/v1/tiles/{tileset}/3857/{z}/{x}/{y}.webp?api={key}`) when `VITE_LINZ_BASEMAPS_KEY` is set at build time. The tileset defaults to `aerial` (`VITE_LINZ_BASEMAPS_TILESET`), and the attribution string comes from the LINZ docs. Without a key it falls back to OSM with a console WARN, for dev only. `scripts/deploy.sh` passes the key through from the caller's env and warns when it is unset.
+- **Key type:** LINZ issues per-browser "individual" keys "for individual users"; public apps need a free, site-restricted **Developer** key requested from `basemaps@linz.govt.nz` (verified on basemaps.linz.govt.nz and the LINZ Get-started guide, 2026-10-10). The key ships in tile URLs (site-restricted), but stays out of the repo.
+- **Open:** `aerial` has no street labels. If reporters need them, evaluate the vector `topographic` style (needs MapLibre GL, not Leaflet raster) once the key exists.
