@@ -2,6 +2,8 @@
 // one staff login. Idempotent. `npm run seed`.
 // Defaults: staff@example.govt.nz / password123 — override with
 // SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD / SEED_DUTY_EMAIL.
+// SEED_DEMO=0 skips everything (prod: deploy/remote-setup.sh sets it so a
+// deploy never recreates the demo zone or a default-password login, #31).
 import argon2 from 'argon2';
 import { pool } from '../src/db.js';
 
@@ -14,6 +16,11 @@ const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'password123';
 const DUTY_EMAIL = process.env.SEED_DUTY_EMAIL ?? 'duty@example.govt.nz';
 
 async function main() {
+  if (process.env.SEED_DEMO === '0') {
+    console.warn('[seed] SEED_DEMO=0 — skipping demo council, Citywide zone and demo staff login');
+    await pool.end();
+    return;
+  }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

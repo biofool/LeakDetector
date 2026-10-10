@@ -1,0 +1,41 @@
+# Yearly reminder to refresh council boundaries (#32). Stats NZ publishes each
+# year's territorial-authority layer (Territorial_Authority_<year>) around the
+# start of the year; TA boundaries change with reorganisations. This opens a
+# checklist issue once a year (skipped while one is still open) — the refresh
+# itself is a manual, reviewed import (backend/data/zones/README.md).
+name: Boundary Refresh Reminder
+
+on:
+  schedule:
+    - cron: "17 21 1 2 *"   # 1 Feb 21:17 UTC (≈ 2 Feb morning NZ)
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Open boundary refresh issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh label create boundary-refresh --color 0E8A16 --description "Yearly Stats NZ TA boundary refresh" 2>/dev/null || true
+          open=$(gh issue list --state open --label boundary-refresh --limit 1 --json number --jq '.[0].number')
+          if [ -n "$open" ]; then echo "refresh issue #$open still open — skipping"; exit 0; fi
+          year=$(date -u +%Y)
+          gh issue create --label boundary-refresh \
+            --title "Refresh council boundaries — Stats NZ TA $year" \
+            --body "$(cat <<EOF
+          Yearly reminder (#32). Steps: \`backend/data/zones/README.md\`.
+
+          - [ ] Check https://datafinder.stats.govt.nz/ for the **Territorial Authority $year** layer (the FeatureServer name changes per year, e.g. \`Territorial_Authority_$year\`, field \`TA${year}_V1_00_NAME\`).
+          - [ ] If boundaries or names changed: fetch to \`backend/data/zones/raw/\`, regenerate the clipped GeoJSON, update \`scripts/import-zones.ts\` for the new field name, commit.
+          - [ ] Import on prod (\`node dist/scripts/import-zones.js\` in the api image, see #25) then \`node dist/scripts/import-contacts.js\` so council contacts re-attach.
+          - [ ] Re-verify lookups: Wellington (-41.29, 174.78) → Wellington City; Auckland (-36.85, 174.76) → Auckland.
+          - [ ] If nothing changed, close with a note.
+          EOF
+          )"
