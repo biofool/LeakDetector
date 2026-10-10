@@ -106,12 +106,12 @@ fi
 # ---------------------------------------------------------------- 2. purge
 step "2. purge pending test-recipient rows (example.nz / example.govt.nz)"
 echo "pending by recipient domain (before):"
-BEFORE=$(echo "SELECT split_part(recipient,'@',2)||'='||count(*) FROM notification_outbox WHERE status='pending' GROUP BY 1 ORDER BY 1;" | sql)
+BEFORE=$(echo "SELECT split_part(recipient,'@',2)||'='||count(*) FROM notification_outbox WHERE status='pending' GROUP BY split_part(recipient,'@',2) ORDER BY 1;" | sql)
 echo "${BEFORE:-  (none)}" | sed 's/^/  /'; A[pending_before]="$BEFORE"
 if [ "$APPLY" = 1 ]; then
   N=$(echo "WITH u AS (UPDATE notification_outbox SET status='failed', last_error='purged before email go-live: test recipient' WHERE status='pending' AND split_part(recipient,'@',2) IN ('example.nz','example.govt.nz') RETURNING 1) SELECT count(*) FROM u;" | sql)
   echo "purged: $N"; A[purged]=$N
-  AFTER=$(echo "SELECT split_part(recipient,'@',2)||'='||count(*) FROM notification_outbox WHERE status='pending' GROUP BY 1 ORDER BY 1;" | sql)
+  AFTER=$(echo "SELECT split_part(recipient,'@',2)||'='||count(*) FROM notification_outbox WHERE status='pending' GROUP BY split_part(recipient,'@',2) ORDER BY 1;" | sql)
   echo "pending (after): ${AFTER:-none}"; A[pending_after]="$AFTER"
 fi
 
