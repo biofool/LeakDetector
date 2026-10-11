@@ -42,6 +42,10 @@ set -a; . /opt/leakdetector/leakdetector.env; set +a
 docker network inspect leaknet >/dev/null 2>&1 || docker network create leaknet
 docker volume create leakdetector-pgdata >/dev/null
 docker volume create leakdetector-uploads >/dev/null
+# The image runs as USER node (uid 1000); volumes created by earlier root-run
+# images stay root-owned and the API then cannot write photos. Idempotent.
+docker run --rm -u root -v leakdetector-uploads:/data/uploads leakdetector-api \
+  chown -R node:node /data/uploads
 
 docker rm -f leakdetector-db 2>/dev/null || true
 docker run -d --name leakdetector-db --network leaknet --restart always \
