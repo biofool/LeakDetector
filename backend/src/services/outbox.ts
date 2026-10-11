@@ -45,19 +45,42 @@ async function sendViaPostmark(to: string, subject: string, text: string, cc?: s
   if (!res.ok) throw new Error(`postmark ${res.status}: ${await res.text()}`);
 }
 
+/**
+ * Name the cause of a failed Cloudflare call (CloudManagement#111). Uses the
+ * error code + message, never the status alone: 9109 means an IP filter, an
+ * account token on a /user endpoint, or a missing permission.
+ */
+export function cfDiagnose(status: number, body: unknown): string {
+  const errors = (body as { errors?: Array<{ code?: number; message?: string }> } | null)?.errors;
+  const first = Array.isArray(errors) && errors.length ? errors[0] : {};
+  const code = first.code;
+  const msg = String(first.message ?? '').toLowerCase();
+  if (status === 0) return 'network_error';
+  if (code === 9109 && msg.includes('location')) return 'ip_blocked: CF_API_TOKEN IP filter rejects this host';
+  if (code === 9109 && msg.includes('user-level authentication')) return 'wrong_token_type: account token on a /user endpoint';
+  if (code === 10105) return 'not_entitled: account or CF_EMAIL_FROM domain not onboarded to Email Sending';
+  if (code === 9109 || code === 10000 || status === 403) return 'missing_scope: CF_API_TOKEN lacks Account > Email Sending:Send';
+  if ((code !== undefined && [1000, 6003, 6111].includes(code)) || status === 401) {
+    return 'invalid_token: CF_API_TOKEN revoked, wrong value, or stray whitespace';
+  }
+  if (status === 429) return 'rate_limited';
+  if (status >= 500) return `server_error (${status})`;
+  return `unknown (HTTP ${status})`;
+}
+
 async function sendViaCloudflare(to: string, subject: string, text: string, cc?: string): Promise<void> {
   const res = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${config.cloudflare.accountId}/email/sending/send`,
     {
       method: 'POST',
-      headers: { Authorization: `Bearer ${config.cloudflare.token}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${config.cloudflare.token.trim()}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ to, from: config.cloudflare.from, cc, subject, text }),
       signal: AbortSignal.timeout(15_000),
     },
   );
   const body = (await res.json().catch(() => ({}))) as { success?: boolean; errors?: unknown };
   if (!res.ok || body.success === false) {
-    throw new Error(`cloudflare ${res.status}: ${JSON.stringify(body.errors ?? body)}`);
+    throw new Error(`cloudflare ${res.status} [${cfDiagnose(res.status, body)}]: ${JSON.stringify(body.errors ?? body)}`);
   }
 }
 
