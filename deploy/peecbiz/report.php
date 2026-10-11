@@ -17,6 +17,7 @@ $OPEN = ['received', 'investigating', 'contractor_assigned'];
 function h(?string $s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
 function api(string $origin, string $path, string $method = 'GET'): array {
+  global $leak_proxy_secret;
   $ch = curl_init($origin . $path);
   curl_setopt_array($ch, [
     CURLOPT_CUSTOMREQUEST => $method,
