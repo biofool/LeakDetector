@@ -1,6 +1,7 @@
 # E2E test plan — report → staff workflow → reporter notification
 
-Target: `backend/` (Node/Express + PostGIS), not `legacy/` (FastAPI MVP).
+Target: `backend/` (Node/Express + PostGIS); the retired FastAPI + SQLite
+MVP was deleted on 2026-10-12.
 
 ## Environment
 

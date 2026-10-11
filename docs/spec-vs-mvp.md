@@ -1,6 +1,7 @@
 # Spec vs MVP — gap list
 
-What the FastAPI + SQLite MVP in [`legacy/`](../legacy) does, versus what
+What the retired FastAPI + SQLite MVP did (deleted 2026-10-12; see git
+history), versus what
 [`spec.md`](spec.md) requires. Read this with [`decisions.md`](decisions.md).
 
 ## Naming / contract gaps (breaking)

@@ -11,7 +11,6 @@ Modelled on FixMyStreet / SeeClickFix / MAWC Citizen Leak Reporter.
 | `backend/` | Node + Express + Postgres/PostGIS API, `/api/v1` |
 | `frontend/` | React + Vite + Tailwind PWA |
 | `docs/` | `spec.md` (design + API), `decisions.md`, `brief.md`, `spec-vs-mvp.md` |
-| `legacy/` | Original FastAPI + SQLite MVP (reference only) |
 
 ## Quick start
 

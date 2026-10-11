@@ -5,8 +5,8 @@ Monorepo per `docs/spec.md`. `backend/` is Express + TypeScript +
 separate process draining `notification_outbox` and running the SLA sweep.
 `frontend/` is React + Vite + Tailwind PWA (routes `/`, `/map`, `/r/:id`,
 `/staff`). Staff auth is JWT via `POST /api/v1/auth/login` (argon2id
-hashes, 8 h tokens, council-scoped). `legacy/` holds the retired
-FastAPI + SQLite MVP — reference only, do not extend it.
+hashes, 8 h tokens, council-scoped). The retired FastAPI + SQLite MVP
+(`legacy/`) was deleted on 2026-10-12 — see git history.
 
 `docs/decisions.md` records every deviation from the original brief
 (`docs/brief.md`); `docs/spec-vs-mvp.md` lists the gaps and open
@@ -18,7 +18,6 @@ decisions. Update these when the design or the code changes.
 - `deploy/`
 - `docs/`
 - `frontend/`
-- `legacy/`
 - `logs/`
 - `scripts/`
 
