@@ -17,4 +17,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 COPY migrations ./dist/migrations
+# local photo store (UPLOAD_DIR=data/uploads) must be writable by the runtime user
+RUN mkdir -p data/uploads && chown node:node data/uploads
+USER node
 CMD ["node", "dist/src/index.js"]
