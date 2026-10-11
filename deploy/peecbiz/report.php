@@ -24,8 +24,14 @@ function api(string $origin, string $path, string $method = 'GET'): array {
     CURLOPT_TIMEOUT => 15,
     // Forward the visitor IP like api-proxy.php does — otherwise every no-JS
     // confirm shares this host's IP and one 10/h rate-limit bucket.
-    CURLOPT_HTTPHEADER => ['Accept: application/json',
+    CURLOPT_HTTPHEADER => array_merge(['Accept: application/json',
       'X-Forwarded-For: ' . ($_SERVER['REMOTE_ADDR'] ?? ''), 'X-Forwarded-Proto: https'],
+      // #48 — same proxy proof as api-proxy.php so the API trusts the
+      // forwarded visitor IP for rate limiting.
+      !empty($leak_proxy_secret)
+        ? ['X-LD-Proxy-Secret: ' . $leak_proxy_secret,
+           'X-LD-Client-Ip: ' . ($_SERVER['REMOTE_ADDR'] ?? '')]
+        : []),
   ]);
   $body = curl_exec($ch);
   $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -106,6 +112,16 @@ if (!$r) {
 
 $status = $r['status'] ?? 'received';
 $c = $r['council_zone']['contact'] ?? [];
+// #56 — URLs rendered into href must be http(s) only; council contact data
+// is operator-sourced but a bad value must never emit javascript:/data:.
+$safeUrl = function (?string $u): ?string {
+  if (empty($u)) return null;
+  $scheme = strtolower((string)parse_url($u, PHP_URL_SCHEME));
+  return in_array($scheme, ['http', 'https'], true) ? $u : null;
+};
+$c['form_url'] = $safeUrl($c['form_url'] ?? null);
+// tel:/sms: numbers get the same digit-only treatment as the call link.
+$c['sms_number'] = empty($c['sms_number']) ? null : preg_replace('/[^\d+]/', '', $c['sms_number']);
 $hasContact = array_filter([$c['entity'] ?? null, $c['phone'] ?? null, $c['form_url'] ?? null, $c['app'] ?? null, $c['sms_number'] ?? null]);
 
 $body = '<p><a href="' . $BASE . '/map">&larr; Map</a></p>'

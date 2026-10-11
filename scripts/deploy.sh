@@ -39,6 +39,19 @@ cp deploy/peecbiz/htaccess "$DIST/.htaccess"
 cp deploy/peecbiz/api-proxy.php "$DIST/"
 cp deploy/peecbiz/report.php "$DIST/"
 
+# #48 — the PHP proxies prove themselves to the API with a shared secret so
+# only proxied requests can assert a client IP for rate limiting. The value
+# must equal PROXY_SHARED_SECRET in /opt/leakdetector/leakdetector.env on the
+# VM; rsync --delete would wipe a hand-placed local file, so it is rebuilt
+# here on every deploy.
+if [ -n "${PROXY_SHARED_SECRET:-}" ]; then
+  printf '<?php\n$leak_proxy_secret = %s;\n' "'$(printf '%s' "$PROXY_SHARED_SECRET" | sed "s/'/'\\\\''/g")'" \
+    > "$DIST/leak-proxy.local.php"
+else
+  echo "WARNING: PROXY_SHARED_SECRET unset — proxies will not send X-LD-Proxy-Secret;" >&2
+  echo "         all visitors share one rate-limit bucket at the API (#48)." >&2
+fi
+
 if [ "$DRY" = 1 ]; then
   echo "== dryrun =="
   echo "would rsync $DIST/ -> $PEEC:$PEEC_DIR"

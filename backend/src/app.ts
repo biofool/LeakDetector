@@ -11,12 +11,17 @@ import { errorHandler, notFound } from './middleware/errors.js';
 
 export function createApp() {
   const app = express();
-  app.set('trust proxy', 1); // Railway runs behind a proxy (spec §3)
+  // #48 — do NOT trust proxy headers: the origin is publicly reachable, so a
+  // client-supplied X-Forwarded-For is attacker-controlled. Rate limiting
+  // uses middleware/clientIp.ts, which only honours an asserted client IP
+  // alongside the X-LD-Proxy-Secret sent by the peec.biz PHP proxy.
   // crossOriginResourcePolicy must stay cross-origin — the PWA loads
   // /uploads photos from this API on a different origin.
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(cors({ origin: config.corsOrigin === '*' ? true : config.corsOrigin.split(',') }));
   app.use(express.json({ limit: '1mb' }));
+  // urlencoded: browser confirm/unsubscribe/verify form posts (#50, #51).
+  app.use(express.urlencoded({ extended: false, limit: '8kb' }));
   app.use((req, res, next) => {
     const start = Date.now();
     res.on('finish', () => console.log(`${req.method} ${req.originalUrl} → ${res.statusCode} ${Date.now() - start}ms`));

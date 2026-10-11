@@ -10,6 +10,13 @@ if (existsSync(envPath)) {
 
 const env = (key: string, fallback = ''): string => process.env[key] ?? fallback;
 
+// #49 — a missing JWT_SECRET must never fall back to a public value in
+// production: anyone could sign staff tokens. Dev/test keep the default.
+const jwtSecret = env('JWT_SECRET');
+if (!jwtSecret && env('NODE_ENV') === 'production') {
+  throw new Error('JWT_SECRET is required when NODE_ENV=production — refusing insecure default');
+}
+
 export const config = {
   port: Number(env('PORT', '8080')),
   databaseUrl: env('DATABASE_URL', 'postgres://postgres:postgres@127.0.0.1:5433/leakdetector'),
@@ -19,8 +26,15 @@ export const config = {
   // API + Bearer auth. Set to the deployed web origin for tighter posture.
   corsOrigin: env('CORS_ORIGIN', '*'),
 
-  jwtSecret: env('JWT_SECRET', 'dev-insecure-secret'),
+  jwtSecret: jwtSecret || 'dev-insecure-secret',
   jwtTtlHours: Number(env('JWT_TTL_HOURS', '8')),
+
+  // #48 — shared secret between the peec.biz PHP proxy and this API. When
+  // set, only requests carrying `X-LD-Proxy-Secret: <value>` get their
+  // rate-limit IP from `X-LD-Client-Ip`; everything else (including direct
+  // origin hits with a spoofed X-Forwarded-For) keys on the socket address.
+  // Unset → never trust client-supplied IP headers.
+  proxySecret: env('PROXY_SHARED_SECRET'),
 
   uploadDir: env('UPLOAD_DIR', 'data/uploads'),
   s3: {

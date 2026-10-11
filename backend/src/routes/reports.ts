@@ -7,11 +7,13 @@ import { query, withTx } from '../db.js';
 import { config } from '../config.js';
 import { ApiError } from '../middleware/errors.js';
 import { rateLimit } from '../middleware/rateLimit.js';
+import { originCheck } from '../middleware/originCheck.js';
 import { requireStaff, optionalStaff, canAccess } from '../middleware/staffAuth.js';
 import { computeSLA } from '../services/sla.js';
 import { zoneForPoint } from '../services/zones.js';
 import { findNearby, effectiveRadius } from '../services/duplicates.js';
-import { processPhoto, photoUrl } from '../services/photos.js';
+import { processPhoto, photoUrl, removeKeys, rotateStoredKey } from '../services/photos.js';
+import type { ProcessedPhoto } from '../services/photos.js';
 import { queue } from '../services/outbox.js';
 import { alertTargets } from '../services/submission.js';
 import { toReport } from '../util/serialize.js';
@@ -77,15 +79,34 @@ function normaliseContact(raw: string | undefined): string | null {
 router.post(
   '/',
   rateLimit('create-report', 5, 60 * 60 * 1000),
+  originCheck,
   upload.array('photos', 3),
   async (req, res, next) => {
+    // #54 — photos are re-encoded and stored BEFORE the DB transaction so
+    // the pool connection is never held through sharp + file I/O. Any
+    // objects stored for a report that fails to insert are removed again
+    // (best-effort — removeKeys logs failures).
+    const storedKeys: string[] = [];
     try {
       const input = createSchema.parse(req.body);
-      for (const f of req.files as Express.Multer.File[]) {
+      const files = (req.files as Express.Multer.File[]) ?? [];
+      for (const f of files) {
         if (!IMAGE_TYPES.has(f.mimetype)) {
           throw new ApiError(415, 'unsupported_type', `photo type ${f.mimetype} not supported`);
         }
       }
+      const photos: ProcessedPhoto[] = [];
+      for (const f of files) {
+        let p: ProcessedPhoto;
+        try {
+          p = await processPhoto(f.buffer);
+        } catch {
+          throw new ApiError(415, 'unsupported_type', 'photo could not be processed — is it a real image?');
+        }
+        storedKeys.push(p.storage_key, p.thumb_key);
+        photos.push(p);
+      }
+
       const contact = normaliseContact(input.reporter_contact);
       const zone = await zoneForPoint(input.lng, input.lat);
       if (!zone) {
@@ -111,14 +132,7 @@ router.post(
         const ref = toRef(id);
         const tracking_url = `${config.publicBaseUrl}/r/${id}`;
 
-        const files = (req.files as Express.Multer.File[]) ?? [];
-        for (const f of files) {
-          let p;
-          try {
-            p = await processPhoto(id, f.buffer);
-          } catch {
-            throw new ApiError(415, 'unsupported_type', 'photo could not be processed — is it a real image?');
-          }
+        for (const p of photos) {
           await client.query(
             `INSERT INTO report_photos (report_id, storage_key, thumb_key, content_type, width, height, bytes)
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -159,7 +173,7 @@ router.post(
         // report (#37) — capped at 20, dedupe_keyed per report+volunteer.
         const { rows: volunteers } = await client.query(
           `SELECT id, name, email, unsubscribe_token FROM volunteers
-           WHERE council_zone_id = $1 AND active ORDER BY id LIMIT 20`,
+           WHERE council_zone_id = $1 AND active AND verified ORDER BY id LIMIT 20`,
           [zone.id],
         );
         for (const v of volunteers) {
@@ -223,6 +237,7 @@ router.post(
         possible_duplicates: duplicates.map((d) => ({ id: d.id, distance_m: d.distance_m, status: d.status })),
       });
     } catch (e) {
+      await removeKeys(storedKeys); // report insert failed — don't orphan the files
       next(e);
     }
   },
@@ -293,12 +308,27 @@ router.patch('/:id(\\d+)/photos/:photoId(\\d+)', requireStaff, async (req, res, 
     if (!canAccess(req.user!, row.council_id!)) {
       throw new ApiError(403, 'forbidden', 'report belongs to another council');
     }
-    const upd = await query(
-      'UPDATE report_photos SET is_hidden = $1 WHERE id = $2 AND report_id = $3 RETURNING id, is_hidden',
-      [body.is_hidden, req.params.photoId, req.params.id],
+    const { rows: photos } = await query(
+      'SELECT id, storage_key, thumb_key, is_hidden FROM report_photos WHERE id = $1 AND report_id = $2',
+      [req.params.photoId, req.params.id],
     );
-    if (!upd.rowCount) throw new ApiError(404, 'not_found', 'photo not found on this report');
-    res.json({ id: Number(upd.rows[0].id), is_hidden: upd.rows[0].is_hidden });
+    const photo = photos[0];
+    if (!photo) throw new ApiError(404, 'not_found', 'photo not found on this report');
+
+    // #52 — hiding must kill the public URL, not just filter it out of API
+    // responses: the old key may already sit in browser history, emails, or
+    // caches. Move both objects to fresh keys; only staff see the new ones.
+    let storageKey = photo.storage_key;
+    let thumbKey = photo.thumb_key;
+    if (body.is_hidden && !photo.is_hidden) {
+      storageKey = await rotateStoredKey(photo.storage_key);
+      thumbKey = await rotateStoredKey(photo.thumb_key);
+    }
+    await query(
+      'UPDATE report_photos SET is_hidden = $1, storage_key = $2, thumb_key = $3 WHERE id = $4',
+      [body.is_hidden, storageKey, thumbKey, photo.id],
+    );
+    res.json({ id: Number(photo.id), is_hidden: body.is_hidden });
   } catch (e) {
     next(e);
   }
@@ -308,6 +338,7 @@ router.patch('/:id(\\d+)/photos/:photoId(\\d+)', requireStaff, async (req, res, 
 router.post(
   '/:id(\\d+)/confirm',
   rateLimit('confirm', 10, 60 * 60 * 1000),
+  originCheck,
   async (req, res, next) => {
     try {
       const { rows } = await query('SELECT id, status, is_duplicate_of FROM reports WHERE id = $1', [req.params.id]);

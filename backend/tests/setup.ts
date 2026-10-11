@@ -7,3 +7,4 @@ process.env.JWT_SECRET = 'test-secret';
 process.env.PUBLIC_BASE_URL = 'http://127.0.0.1:5173';
 process.env.UPLOAD_DIR = '/tmp/leakdetector-test-uploads';
 process.env.DISABLE_RATE_LIMIT = '1';
+process.env.PROXY_SHARED_SECRET = 'test-proxy-secret';

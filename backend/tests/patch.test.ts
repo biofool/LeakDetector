@@ -132,7 +132,7 @@ describe('PATCH /api/v1/reports/:id', () => {
     expect(Number(rows[0].n)).toBe(1);
   });
 
-  it('staff can hide a photo; public view omits it', async () => {
+  it('staff can hide a photo; public view omits it and the old URL dies (#52)', async () => {
     const token = await staffToken();
     const create = await request(app)
       .post('/api/v1/reports')
@@ -143,14 +143,30 @@ describe('PATCH /api/v1/reports/:id', () => {
       .get(`/api/v1/reports/${create.body.id}`)
       .set('Authorization', `Bearer ${token}`);
     const photoId = got.body.photos[0].id;
+    const oldPath = (got.body.photos[0].url as string).replace(/^https?:\/\/[^/]+/, '');
+    const oldThumb = (got.body.photos[0].thumb_url as string).replace(/^https?:\/\/[^/]+/, '');
+    expect((await request(app).get(oldPath)).status).toBe(200); // live before hide
+
     const hide = await request(app)
       .patch(`/api/v1/reports/${create.body.id}/photos/${photoId}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ is_hidden: true });
     expect(hide.status).toBe(200);
     expect(hide.body.is_hidden).toBe(true);
+
     const pub = await request(app).get(`/api/v1/reports/${create.body.id}`);
     expect(pub.body.photos).toHaveLength(0);
+    // The previously published URL must 404 — the object moved, the URL died.
+    expect((await request(app).get(oldPath)).status).toBe(404);
+    expect((await request(app).get(oldThumb)).status).toBe(404);
+    // Staff still see the photo, now at fresh unguessable keys.
+    const staffView = await request(app)
+      .get(`/api/v1/reports/${create.body.id}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(staffView.body.photos).toHaveLength(1);
+    const newPath = (staffView.body.photos[0].url as string).replace(/^https?:\/\/[^/]+/, '');
+    expect(newPath).not.toBe(oldPath);
+    expect((await request(app).get(newPath)).status).toBe(200);
   });
 
   it('recalculates SLA when severity changes', async () => {
@@ -200,6 +216,20 @@ describe('status history + confirm rules (D11/D15)', () => {
     expect(res.body.error.code).toBe('is_duplicate');
     // Parent still confirms fine.
     const ok = await request(app).post(`/api/v1/reports/${parent.id}/confirm`);
+    expect(ok.status).toBe(200);
+  });
+
+  it('rejects confirm posts from foreign origins (#55)', async () => {
+    const r = await makeReport();
+    const csrf = await request(app)
+      .post(`/api/v1/reports/${r.id}/confirm`)
+      .set('Origin', 'https://evil.example');
+    expect(csrf.status).toBe(403);
+    expect(csrf.body.error.code).toBe('bad_origin');
+    // Allowed web origin and origin-less (proxy/curl) requests still work.
+    const ok = await request(app)
+      .post(`/api/v1/reports/${r.id}/confirm`)
+      .set('Origin', 'http://127.0.0.1:5173');
     expect(ok.status).toBe(200);
   });
 

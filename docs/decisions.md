@@ -282,3 +282,18 @@ the text.
 - **Spec does:** `LeafletMap` uses LINZ Basemaps XYZ (`https://basemaps.linz.govt.nz/v1/tiles/{tileset}/3857/{z}/{x}/{y}.webp?api={key}`) when `VITE_LINZ_BASEMAPS_KEY` is set at build time. The tileset defaults to `aerial` (`VITE_LINZ_BASEMAPS_TILESET`), and the attribution string comes from the LINZ docs. Without a key it falls back to OSM with a console WARN, for dev only. `scripts/deploy.sh` passes the key through from the caller's env and warns when it is unset.
 - **Key type:** LINZ issues per-browser "individual" keys "for individual users"; public apps need a free, site-restricted **Developer** key requested from `basemaps@linz.govt.nz` (verified on basemaps.linz.govt.nz and the LINZ Get-started guide, 2026-10-10). The key ships in tile URLs (site-restricted), but stays out of the repo.
 - **Open:** `aerial` has no street labels. If reporters need them, evaluate the vector `topographic` style (needs MapLibre GL, not Leaflet raster) once the key exists.
+
+<a id="d-26"></a>
+## D-26 — Security-hardening batch (#48–#56)
+
+Adversarial review findings, all fixed in one pass:
+
+- **#48 client IP for rate limits.** `trust proxy` removed entirely — the origin is publicly reachable, so client-supplied `X-Forwarded-For` is attacker-controlled. Rate limits key on `middleware/clientIp.ts`: the peec.biz PHP proxies (`api-proxy.php`, `report.php`) send `X-LD-Proxy-Secret` + `X-LD-Client-Ip`; only a matching `PROXY_SHARED_SECRET` honours the asserted IP. Unset/mismatched → socket address, which a remote client cannot spoof. `remote-setup.sh` generates the secret into `leakdetector.env` on first install; `deploy.sh` writes `leak-proxy.local.php` on peec.biz from the deploy caller's env (rsync `--delete` would wipe a hand-placed file).
+- **#49 JWT_SECRET.** `config.ts` throws at startup when `NODE_ENV=production` and `JWT_SECRET` is unset — no public default is ever used to sign staff tokens.
+- **#50 unsubscribe.** `GET /volunteers/unsubscribe` renders a bilingual confirm page and never mutates (mail scanners prefetch links); the form POST performs the update.
+- **#51 volunteer verification.** `volunteers.verified` (migration 008; existing rows grandfathered). Signup queues a `volunteer_verify` email (dedupe: one per volunteer per day); report fan-out requires `active AND verified`. Re-signup never re-activates an unsubscribed or unverified row — the verify POST is the only way back in. Verify is also GET-confirm → POST, so scanners can't auto-verify.
+- **#52 hidden photos.** `PATCH …/photos/:id {is_hidden:true}` moves both objects to fresh keys (`services/photos.ts rotateStoredKey`), so the already-shared `/uploads` URL 404s. Staff still see the photo at the new key; unhide re-lists it publicly.
+- **#53 deactivated staff.** `optionalStaff` re-reads the user row per request — deactivated/deleted accounts get 401 immediately, and role/council changes apply without re-login.
+- **#54 photo pipeline.** `processPhoto` runs before the DB transaction (keys are `reports/{uuid}.webp`); stored objects are deleted best-effort if the report insert fails.
+- **#55 CSRF.** `originCheck` middleware on all public mutating endpoints (report create, confirm, volunteer signup/verify/unsubscribe): browser `Origin` must match `PUBLIC_BASE_URL`/`API_PUBLIC_URL`/`CORS_ORIGIN`; absent `Origin` (proxy/curl) stays allowed.
+- **#56 report.php hrefs.** Council `form_url` passes an http/https scheme allowlist; `sms_number` is digit-sanitised like `phone`.

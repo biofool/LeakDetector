@@ -36,6 +36,13 @@ const TEMPLATES: Record<string, (p: Record<string, unknown>) => { subject: strin
     subject: `[LeakDetector] Volunteer: new ${p.category} leak in ${p.zone} — ${p.ref}`,
     text: `Kia ora ${p.volunteer_name},\n\nA new ${p.severity} ${p.category} leak was reported in ${p.zone}.\n${p.tracking_url}\n\nYou’re getting this because you registered as a LeakDetector volunteer — council staff may be in touch if your help is needed.\n\nUnsubscribe: ${p.unsubscribe_url}`,
   }),
+  // Signup confirmation (#51) — volunteers only get report alerts after
+  // clicking verify_url. Carries the unsubscribe link too, so a victim of a
+  // stranger's signup can opt out from this one email.
+  volunteer_verify: (p) => ({
+    subject: `[LeakDetector] Confirm your volunteer signup`,
+    text: `Kia ora ${p.volunteer_name},\n\nConfirm you'd like volunteer alert emails for ${p.zone}:\n${p.verify_url}\n\nNot you? Ignore this email — unconfirmed signups get no alerts — or unsubscribe here:\n${p.unsubscribe_url}`,
+  }),
   // story_graph export (#43) — 64_ingest_from_r2.py fetches every URL in the
   // subject/body, so api_url (public JSON) is the only URL: /r/{id} is a
   // client-rendered SPA that yields no text to a non-JS fetcher. The public

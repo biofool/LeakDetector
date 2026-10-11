@@ -4,8 +4,10 @@
 // a single public URL (https://peec.biz/LeakDetector/...) so no CORS and no
 // extra TLS cert is needed. Pattern follows coach-proxy.php (issue: deploy).
 //
-// Override the upstream with leak-proxy.local.php next to this file:
+// Overrides are written into leak-proxy.local.php next to this file by
+// scripts/deploy.sh (from the deploy caller's env):
 //   <?php $leak_api_origin = 'https://192-9-226-218.sslip.io';
+//         $leak_proxy_secret = '...'; // == PROXY_SHARED_SECRET on the VM
 $leak_api_origin = 'https://192-9-226-218.sslip.io';
 $local = __DIR__ . '/leak-proxy.local.php';
 if (file_exists($local)) require $local;
@@ -24,6 +26,13 @@ $ctype = $_SERVER['CONTENT_TYPE'] ?? '';
 $multipart = str_starts_with($ctype, 'multipart/form-data');
 
 $headers = ['X-Forwarded-For: ' . ($_SERVER['REMOTE_ADDR'] ?? ''), 'X-Forwarded-Proto: https'];
+// #48 — prove the request came through this proxy so the API will trust the
+// asserted client IP for rate limiting. Without the secret the API keys
+// rate limits on the socket address instead.
+if (!empty($leak_proxy_secret)) {
+    $headers[] = 'X-LD-Proxy-Secret: ' . $leak_proxy_secret;
+    $headers[] = 'X-LD-Client-Ip: ' . ($_SERVER['REMOTE_ADDR'] ?? '');
+}
 foreach (['HTTP_AUTHORIZATION' => 'Authorization', 'HTTP_ACCEPT' => 'Accept'] as $s => $h) {
     if (!empty($_SERVER[$s])) $headers[] = "$h: {$_SERVER[$s]}";
 }

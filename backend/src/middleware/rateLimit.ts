@@ -1,6 +1,7 @@
 // backend/src/middleware/rateLimit.ts — fixed-window in-memory limiter.
 // Per-process; fine for a single-instance pilot, swap for Redis at scale.
 import type { Request, Response, NextFunction } from 'express';
+import { clientIp } from './clientIp.js';
 
 const buckets = new Map<string, { count: number; reset: number }>();
 
@@ -16,7 +17,7 @@ export function rateLimit(bucket: string, limit: number, windowMs: number) {
     return (_req: Request, _res: Response, next: NextFunction) => next();
   }
   return (req: Request, res: Response, next: NextFunction): void => {
-    const key = `${bucket}:${req.ip}`;
+    const key = `${bucket}:${clientIp(req)}`;
     const now = Date.now();
     const entry = buckets.get(key);
     if (!entry || entry.reset <= now) {

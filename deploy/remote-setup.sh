@@ -16,7 +16,7 @@ docker build -t leakdetector-api . >/dev/null
 
 if [ ! -f /opt/leakdetector/leakdetector.env ]; then
   umask 077
-  DB_PASS=$(openssl rand -hex 24); JWT=$(openssl rand -hex 32)
+  DB_PASS=$(openssl rand -hex 24); JWT=$(openssl rand -hex 32); PROXY=$(openssl rand -hex 24)
   cat > /opt/leakdetector/leakdetector.env <<ENV
 DATABASE_URL=postgres://postgres:${DB_PASS}@leakdetector-db:5432/leakdetector
 POSTGRES_PASSWORD=${DB_PASS}
@@ -25,11 +25,17 @@ PORT=8080
 PUBLIC_BASE_URL=https://peec.biz/LeakDetector
 API_PUBLIC_URL=https://peec.biz/LeakDetector
 UPLOAD_DIR=/data/uploads
+# #48 — the peec.biz PHP proxies send this in X-LD-Proxy-Secret to prove a
+# request is proxied; only then does the API trust X-LD-Client-Ip for rate
+# limiting. Mirror the same value into deploys: PROXY_SHARED_SECRET=<same>
+# bash scripts/deploy.sh (writes leak-proxy.local.php on peec.biz).
+PROXY_SHARED_SECRET=${PROXY}
 OUTBOX_INTERVAL_MS=30000
 SLA_SWEEP_MS=300000
 STORY_GRAPH_INGEST_EMAIL=corpus@aikifield.com
 ENV
   echo "created /opt/leakdetector/leakdetector.env"
+  echo "NOTE: copy PROXY_SHARED_SECRET into deploy env on peec.biz — see the comment above it"
 fi
 set -a; . /opt/leakdetector/leakdetector.env; set +a
 

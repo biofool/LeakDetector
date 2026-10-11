@@ -1,10 +1,12 @@
 // backend/src/services/photos.ts — sharp re-encode (1600px + 400px thumb,
 // EXIF stripped by default [D-17]) then store in S3 or local disk.
-import { mkdir, writeFile } from 'node:fs/promises';
+// Keys are `reports/{uuid}.webp` — generated before the report row exists
+// (#54), so they no longer carry the report id.
+import { mkdir, rename, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, CopyObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { config, s3Enabled } from '../config.js';
 
 const s3 = s3Enabled
@@ -32,6 +34,11 @@ export interface ProcessedPhoto {
   bytes: number;
 }
 
+const isMissing = (e: unknown): boolean => {
+  const err = e as { code?: string; name?: string; $metadata?: { httpStatusCode?: number } };
+  return err.code === 'ENOENT' || err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404;
+};
+
 async function store(key: string, buf: Buffer): Promise<void> {
   if (s3) {
     await s3.send(new PutObjectCommand({ Bucket: config.s3.bucket, Key: key, Body: buf, ContentType: 'image/webp' }));
@@ -46,10 +53,55 @@ async function store(key: string, buf: Buffer): Promise<void> {
   await writeFile(dest, buf);
 }
 
+/** Best-effort delete of stored objects. Never throws — callers log and
+ *  move on; a leaked orphan is better than masking the real error (#54). */
+export async function removeKeys(keys: string[]): Promise<void> {
+  for (const key of keys) {
+    try {
+      if (s3) {
+        await s3.send(new DeleteObjectCommand({ Bucket: config.s3.bucket, Key: key }));
+      } else {
+        await unlink(join(config.uploadDir, key));
+      }
+    } catch (e) {
+      if (!isMissing(e)) console.warn(`[photos] could not delete orphan ${key}:`, e);
+    }
+  }
+}
+
+/** Move a stored object to a fresh unguessable key, same folder/extension.
+ *  Used when a photo is hidden — its old URL may already be in browser
+ *  history or caches, so hiding must kill that URL, not just filter it out
+ *  of API responses (#52). Missing source files just keep the old key. */
+export async function rotateStoredKey(key: string): Promise<string> {
+  const dir = key.slice(0, key.lastIndexOf('/') + 1);
+  const file = key.slice(dir.length);
+  const thumb = file.endsWith('_t.webp');
+  const fresh = `${dir}${randomUUID()}${thumb ? '_t' : ''}.webp`;
+  try {
+    if (s3) {
+      await s3.send(new CopyObjectCommand({
+        Bucket: config.s3.bucket, Key: fresh,
+        CopySource: `${config.s3.bucket}/${encodeURIComponent(key)}`,
+      }));
+      await s3.send(new DeleteObjectCommand({ Bucket: config.s3.bucket, Key: key }));
+    } else {
+      await rename(join(config.uploadDir, key), join(config.uploadDir, fresh));
+    }
+    return fresh;
+  } catch (e) {
+    if (isMissing(e)) {
+      console.warn(`[photos] ${key} not found while hiding — leaving key unchanged`);
+      return key;
+    }
+    throw e;
+  }
+}
+
 /** Re-encode to webp at 1600px + 400px thumb. EXIF is dropped by default.
  *  Throws on undecodable input — callers map that to 415. */
-export async function processPhoto(reportId: number, buf: Buffer): Promise<ProcessedPhoto> {
-  const base = `reports/${reportId}/${randomUUID().slice(0, 8)}`;
+export async function processPhoto(buf: Buffer): Promise<ProcessedPhoto> {
+  const base = `reports/${randomUUID()}`;
   const img = sharp(buf).rotate(); // .rotate() applies EXIF orientation, then EXIF is stripped
   const [full, thumb] = await Promise.all([
     img.clone().resize({ width: 1600, withoutEnlargement: true }).webp({ quality: 80 }).toBuffer({ resolveWithObject: true }),

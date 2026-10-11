@@ -20,6 +20,7 @@ export interface VolunteerRow {
   help_types: HelpType[];
   note: string | null;
   active: boolean;
+  verified: boolean;
   unsubscribe_token: string;
   created_at: string;
   updated_at: string;
