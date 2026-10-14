@@ -42,3 +42,16 @@
 - Public IDs rendered `WL-000123` from bigint (D-14).
 - Error envelope + rate limiting middleware already stubbed in
   `backend/src/middleware/`.
+
+## File size & responsibility (agent working rule)
+
+- One responsibility per file. Split when a file has multiple reasons to change.
+- Keep the public surface explicit: obvious imports, types, boundaries.
+- 400 lines is a review trigger, not a law. At 300–400 lines ask whether the
+  file should be divided; do not mechanically fragment at 401.
+- Optimize the task, not only the file: right context beats minimal tokens;
+  terse context forces extra tool calls.
+- Pair small files with strong tests and a concise architecture map.
+- Target ~150–400 lines per source file; 400 = soft refactor threshold. Each
+  file independently understandable, narrow-purpose, no hidden context needed.
+- Prefer diff-based targeted edits over full-file rewrites for large files.
