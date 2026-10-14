@@ -78,6 +78,8 @@ async function main() {
 }
 
 // Run only as a script, not on import (tests pull in applyContacts).
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+// shortcut: argv[1] basename check, not import.meta — ts-jest compiles
+// scripts/ as CJS so import.meta fails there; upgrade if ts-jest goes full ESM.
+if (process.argv[1] && /import-contacts\.(ts|js)$/.test(process.argv[1])) {
   main().catch((e) => { console.error(e); process.exit(1); });
 }
