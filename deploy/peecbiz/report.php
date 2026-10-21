@@ -17,6 +17,7 @@ $OPEN = ['received', 'investigating', 'contractor_assigned'];
 function h(?string $s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
 function api(string $origin, string $path, string $method = 'GET'): array {
+  global $leak_proxy_secret;
   $ch = curl_init($origin . $path);
   curl_setopt_array($ch, [
     CURLOPT_CUSTOMREQUEST => $method,
@@ -42,7 +43,8 @@ function api(string $origin, string $path, string $method = 'GET'): array {
 // "I've seen it too" — plain form POST forwarded to the API, then PRG back.
 if ($id > 0 && ($_POST['action'] ?? '') === 'confirm') {
   [$code, $resp] = api($leak_api_origin, "/api/v1/reports/$id/confirm", 'POST');
-  $q = $code === 200 ? 'ok' : (($resp['error'] ?? '') === 'is_duplicate' ? 'duplicate' : 'error');
+  // API errors are {"error":{code,message}} — read the code, not the object (#57).
+  $q = $code === 200 ? 'ok' : (($resp['error']['code'] ?? '') === 'is_duplicate' ? 'duplicate' : 'error');
   header("Location: $BASE/r/$id?confirmed=$q");
   exit;
 }

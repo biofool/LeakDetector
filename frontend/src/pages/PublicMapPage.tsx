@@ -26,7 +26,10 @@ export default function PublicMapPage() {
   useEffect(() => {
     listReports({ status: status || undefined, limit: 200 })
       .then((r) => setReports(r.results))
-      .catch(() => setReports([]));
+      .catch((e) => {
+        console.warn('[map] report list load failed:', e);
+        setReports([]);
+      });
   }, [status]);
 
   const markers = useMemo(

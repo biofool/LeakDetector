@@ -32,7 +32,12 @@ export function alertTargets(
   fallbackEmail: string,
 ): AlertTarget[] {
   if (channel === 'sms' && cfg.sms_number) {
-    return [{ channel: 'sms', recipient: cfg.sms_number }];
+    // Without a gateway the worker defers the sms row forever — queue the
+    // email fallback like unimplemented channels get instead (#57).
+    if (config.smsGateway.url) {
+      return [{ channel: 'sms', recipient: cfg.sms_number }];
+    }
+    console.warn('[submission] sms channel selected but SMS_GATEWAY_URL unset — falling back to email');
   }
   if (UNIMPLEMENTED.includes(channel)) {
     console.warn(`[submission] channel ${channel} not implemented — falling back to email`);

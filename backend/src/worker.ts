@@ -152,7 +152,10 @@ async function drainOutbox(): Promise<void> {
   }
 }
 
+let sweeping = false;
 async function slaSweep(): Promise<void> {
+  if (sweeping) return; // previous sweep still running — don't overlap (#57)
+  sweeping = true;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -186,6 +189,7 @@ async function slaSweep(): Promise<void> {
     console.error('[worker] SLA sweep failed:', e);
   } finally {
     client.release();
+    sweeping = false;
   }
 }
 

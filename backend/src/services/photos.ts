@@ -2,7 +2,7 @@
 // EXIF stripped by default [D-17]) then store in S3 or local disk.
 // Keys are `reports/{uuid}.webp` — generated before the report row exists
 // (#54), so they no longer carry the report id.
-import { mkdir, rename, unlink, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
@@ -69,11 +69,14 @@ export async function removeKeys(keys: string[]): Promise<void> {
   }
 }
 
-/** Move a stored object to a fresh unguessable key, same folder/extension.
+/** Copy a stored object to a fresh unguessable key, same folder/extension.
  *  Used when a photo is hidden — its old URL may already be in browser
  *  history or caches, so hiding must kill that URL, not just filter it out
- *  of API responses (#52). Missing source files just keep the old key. */
-export async function rotateStoredKey(key: string): Promise<string> {
+ *  of API responses (#52). This only copies; the caller updates the DB row
+ *  to the new keys first and deletes the old objects afterwards, so a
+ *  mid-sequence failure can't leave the row pointing at moved files (#57).
+ *  Missing source files just keep the old key. */
+export async function copyToFreshKey(key: string): Promise<string> {
   const dir = key.slice(0, key.lastIndexOf('/') + 1);
   const file = key.slice(dir.length);
   const thumb = file.endsWith('_t.webp');
@@ -84,9 +87,8 @@ export async function rotateStoredKey(key: string): Promise<string> {
         Bucket: config.s3.bucket, Key: fresh,
         CopySource: `${config.s3.bucket}/${encodeURIComponent(key)}`,
       }));
-      await s3.send(new DeleteObjectCommand({ Bucket: config.s3.bucket, Key: key }));
     } else {
-      await rename(join(config.uploadDir, key), join(config.uploadDir, fresh));
+      await copyFile(join(config.uploadDir, key), join(config.uploadDir, fresh));
     }
     return fresh;
   } catch (e) {
@@ -110,6 +112,13 @@ export async function processPhoto(buf: Buffer): Promise<ProcessedPhoto> {
   const storage_key = `${base}.webp`;
   const thumb_key = `${base}_t.webp`;
   await store(storage_key, full.data);
-  await store(thumb_key, thumb);
+  try {
+    await store(thumb_key, thumb);
+  } catch (e) {
+    // Caller only registers keys after we return — clean up the stored
+    // full-size object ourselves so a thumb failure doesn't orphan it (#57).
+    await removeKeys([storage_key]);
+    throw e;
+  }
   return { storage_key, thumb_key, content_type: 'image/webp', width: full.info.width, height: full.info.height, bytes: full.data.length };
 }
