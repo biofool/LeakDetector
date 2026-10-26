@@ -46,7 +46,7 @@ SSH=(ssh -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes -o StrictHostKeyChecki
 ENVF=/opt/leakdetector/leakdetector.env
 CF_ACCOUNT_ID=062579a5337db8e60922bca1c0fd922f
 CF_EMAIL_FROM=leaks@aikifield.com
-STORY_GRAPH_INGEST_EMAIL=corpus@aikifield.com
+STORY_GRAPH_INGEST_EMAIL=story_graph@aikifield.com
 SITE=https://peec.biz/LeakDetector
 TS=$(date -u +%Y%m%dT%H%M%SZ)
 AUDIT="data/audit/email-golive-$TS.json"
