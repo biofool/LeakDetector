@@ -15,7 +15,8 @@ export async function withTx<T>(fn: (client: pg.PoolClient) => Promise<T>): Prom
     await client.query('COMMIT');
     return out;
   } catch (e) {
-    await client.query('ROLLBACK');
+    // Unguarded ROLLBACK on a dead connection would mask the real error (#57).
+    await client.query('ROLLBACK').catch((re) => console.warn('[db] ROLLBACK failed:', re));
     throw e;
   } finally {
     client.release();

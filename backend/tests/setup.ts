@@ -8,3 +8,6 @@ process.env.PUBLIC_BASE_URL = 'http://127.0.0.1:5173';
 process.env.UPLOAD_DIR = '/tmp/leakdetector-test-uploads';
 process.env.DISABLE_RATE_LIMIT = '1';
 process.env.PROXY_SHARED_SECRET = 'test-proxy-secret';
+// Present but unreachable — enough for alertTargets to keep the sms channel
+// (a missing URL now falls back to email, #57); the worker never runs here.
+process.env.SMS_GATEWAY_URL = 'http://127.0.0.1:9/sms-test';

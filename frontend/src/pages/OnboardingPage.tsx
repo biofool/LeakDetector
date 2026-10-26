@@ -1,7 +1,7 @@
 // frontend/src/pages/OnboardingPage.tsx — first-run 3-screen onboarding (/welcome).
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { markOnboarded, useLang } from '../i18n/LanguageContext.js';
+import { useLang } from '../i18n/LanguageContext.js';
 import LanguageToggle from '../components/LanguageToggle.js';
 
 export default function OnboardingPage() {
@@ -10,7 +10,6 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0);
 
   const finish = () => {
-    markOnboarded();
     nav('/');
   };
 

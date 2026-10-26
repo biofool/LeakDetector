@@ -8,11 +8,24 @@ export default function CouncilContact({ report }: { report: Report }) {
   const c = report.council_zone.contact;
   if (!c || (!c.entity && !c.phone && !c.form_url && !c.app && !c.sms_number)) return null;
   const tel = c.phone?.split('/')[0].replace(/[^\d+]/g, '');
+  // Same sanitization as the PHP twin (report.php #56): council contact data
+  // is operator-sourced but a bad value must never emit javascript:/data:,
+  // and sms: numbers get digit-only treatment (#57).
+  const formUrl = (() => {
+    if (!c.form_url) return null;
+    try {
+      const scheme = new URL(c.form_url, window.location.origin).protocol.toLowerCase();
+      return scheme === 'http:' || scheme === 'https:' ? c.form_url : null;
+    } catch {
+      return null;
+    }
+  })();
+  const smsNumber = c.sms_number?.replace(/[^\d+]/g, '') || null;
   // sms: URI with a prefilled body — the reporter's own phone sends the text,
   // so it's free and works without a backend SMS gateway (#35). The tracking
   // page is the public photo link.
   const smsBody = `Water leak, ${report.category}. Lat ${report.lat.toFixed(5)}, long ${report.lng.toFixed(5)}. Photos: ${window.location.origin}/r/${report.id}`;
-  const smsHref = c.sms_number ? `sms:${c.sms_number}?&body=${encodeURIComponent(smsBody)}` : null;
+  const smsHref = smsNumber ? `sms:${smsNumber}?&body=${encodeURIComponent(smsBody)}` : null;
   return (
     <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
       <h2 className="text-sm font-semibold text-slate-900">{m.statusPage.contactHeading}</h2>
@@ -33,12 +46,12 @@ export default function CouncilContact({ report }: { report: Report }) {
             href={smsHref}
             className="rounded-xl border border-cyan-700 px-3 py-2 text-sm font-medium text-cyan-800"
           >
-            {m.statusPage.textCouncil(c.sms_number!)}
+            {m.statusPage.textCouncil(smsNumber!)}
           </a>
         )}
-        {c.form_url && (
+        {formUrl && (
           <a
-            href={c.form_url}
+            href={formUrl}
             target="_blank"
             rel="noreferrer"
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"

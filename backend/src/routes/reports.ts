@@ -12,7 +12,7 @@ import { requireStaff, optionalStaff, canAccess } from '../middleware/staffAuth.
 import { computeSLA } from '../services/sla.js';
 import { zoneForPoint } from '../services/zones.js';
 import { findNearby, effectiveRadius } from '../services/duplicates.js';
-import { processPhoto, photoUrl, removeKeys, rotateStoredKey } from '../services/photos.js';
+import { processPhoto, photoUrl, removeKeys, copyToFreshKey } from '../services/photos.js';
 import type { ProcessedPhoto } from '../services/photos.js';
 import { queue } from '../services/outbox.js';
 import { alertTargets } from '../services/submission.js';
@@ -244,11 +244,13 @@ router.post(
 );
 
 // ----------------------------------------------------------- GET /nearby
+// Bounds + finite: lat=200 or 1e999 (→ Infinity through coerce) would throw
+// inside ST_MakePoint::geography and surface as a 500 (#57).
 const nearbySchema = z.object({
-  lat: z.coerce.number(),
-  lng: z.coerce.number(),
-  radius_m: z.coerce.number().optional(),
-  accuracy_m: z.coerce.number().optional(),
+  lat: z.coerce.number().finite().min(-90).max(90),
+  lng: z.coerce.number().finite().min(-180).max(180),
+  radius_m: z.coerce.number().finite().positive().optional(),
+  accuracy_m: z.coerce.number().finite().nonnegative().optional(),
 });
 
 router.get(
@@ -320,14 +322,33 @@ router.patch('/:id(\\d+)/photos/:photoId(\\d+)', requireStaff, async (req, res, 
     // caches. Move both objects to fresh keys; only staff see the new ones.
     let storageKey = photo.storage_key;
     let thumbKey = photo.thumb_key;
+    // Copy both objects to fresh keys, point the row at them, then delete the
+    // old objects last — a mid-sequence failure must not leave the row
+    // pointing at moved files (#57). Fresh copies are removed on failure so
+    // they don't orphan either.
+    const copied: string[] = [];
     if (body.is_hidden && !photo.is_hidden) {
-      storageKey = await rotateStoredKey(photo.storage_key);
-      thumbKey = await rotateStoredKey(photo.thumb_key);
+      try {
+        storageKey = await copyToFreshKey(photo.storage_key);
+        if (storageKey !== photo.storage_key) copied.push(storageKey);
+        thumbKey = await copyToFreshKey(photo.thumb_key);
+        if (thumbKey !== photo.thumb_key) copied.push(thumbKey);
+      } catch (e) {
+        await removeKeys(copied);
+        throw e;
+      }
     }
-    await query(
-      'UPDATE report_photos SET is_hidden = $1, storage_key = $2, thumb_key = $3 WHERE id = $4',
-      [body.is_hidden, storageKey, thumbKey, photo.id],
-    );
+    try {
+      await query(
+        'UPDATE report_photos SET is_hidden = $1, storage_key = $2, thumb_key = $3 WHERE id = $4',
+        [body.is_hidden, storageKey, thumbKey, photo.id],
+      );
+    } catch (e) {
+      await removeKeys(copied);
+      throw e;
+    }
+    const stale = [photo.storage_key, photo.thumb_key].filter((k) => k !== storageKey && k !== thumbKey);
+    if (stale.length) await removeKeys(stale);
     res.json({ id: Number(photo.id), is_hidden: body.is_hidden });
   } catch (e) {
     next(e);
@@ -414,6 +435,13 @@ router.patch('/:id(\\d+)', requireStaff, async (req, res, next) => {
       if (patch.public_note !== undefined) set('public_note', patch.public_note);
       if (patch.is_duplicate_of !== undefined) {
         if (patch.is_duplicate_of !== null) {
+          // Lock both rows in id order before validating — concurrent PATCHes
+          // A→B / B→A would otherwise both pass under READ COMMITTED and
+          // create a 2-cycle that vanishes both reports from lists (#57).
+          await client.query(
+            'SELECT id FROM reports WHERE id = ANY($1::int[]) ORDER BY id FOR UPDATE',
+            [[Number(row.id), patch.is_duplicate_of].sort((a, b) => a - b)],
+          );
           const { rows: t } = await client.query(`${REPORT_SELECT} WHERE r.id = $1`, [patch.is_duplicate_of]);
           const target = t[0];
           if (!target || target.id === row.id || target.is_duplicate_of !== null || target.council_id !== row.council_id) {
@@ -546,7 +574,7 @@ router.get('/', optionalStaff, async (req, res, next) => {
     }
     if (q.bbox) {
       const parts = q.bbox.split(',').map(Number);
-      if (parts.length !== 4 || parts.some(Number.isNaN)) {
+      if (parts.length !== 4 || parts.some((p) => !Number.isFinite(p))) {
         throw bad('bbox must be minLng,minLat,maxLng,maxLat');
       }
       vals.push(...parts);

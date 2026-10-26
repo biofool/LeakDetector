@@ -37,7 +37,7 @@ export default function DashboardPage() {
     setDetail(null);
     setOpenId(openId === id ? null : id);
     if (openId !== id && sess) {
-      getReport(id, sess.token).then(setDetail).catch(() => {});
+      getReport(id, sess.token).then(setDetail).catch((e) => console.warn('[staff] report detail load failed:', e));
     }
   };
 
@@ -70,7 +70,7 @@ export default function DashboardPage() {
   // Volunteer directory (#37) — staff-only; fetched once per session.
   useEffect(() => {
     if (!sess) { setVolunteers([]); return; }
-    listVolunteers(sess.token).then((r) => setVolunteers(r.results)).catch(() => {});
+    listVolunteers(sess.token).then((r) => setVolunteers(r.results)).catch((e) => console.warn('[staff] volunteer list load failed:', e));
   }, [sess]);
 
   if (!sess) {

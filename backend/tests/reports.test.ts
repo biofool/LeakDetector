@@ -19,8 +19,10 @@ describe('POST /api/v1/reports', () => {
       .field('category', 'road')
       .field('severity', 'major')
       .field('description', 'water gushing from a crack in the seal')
-      .field('lat', String(WLG.lat))
-      .field('lng', String(WLG.lng))
+      // Far corner of the zone — >200 m (max duplicate radius) from every
+      // other suite's pin so parallel workers can't make this a duplicate.
+      .field('lat', '-41.45')
+      .field('lng', '174.95')
       .field('reporter_contact', '021 555 0199');
     expect(res.status).toBe(201);
     expect(res.body.ref).toMatch(/^WL-\d{6}$/);

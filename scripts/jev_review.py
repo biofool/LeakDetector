@@ -22,6 +22,7 @@ Install as a pre-push hook (optional):
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.error
@@ -79,6 +80,20 @@ def git(*args):
     return subprocess.run(["git", *args], capture_output=True, text=True).stdout
 
 
+# Runs before the diff leaves the machine — a committed secret must not be
+# transmitted to the review API. Test literals in --selftest are split so
+# this file's own source never trips the scan.
+SECRET_RES = [
+    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    re.compile(r"AKIA[0-9A-Z]{16}"),
+    re.compile(r"(?i)(secret|token|api[_-]?key|password)\s*[:=]\s*['\"]?[A-Za-z0-9_/+\-.]{20,}"),
+]
+
+
+def has_secret(diff):
+    return any(p.search(line) for line in diff.splitlines() for p in SECRET_RES)
+
+
 def outgoing_diff(ref):
     if ref:
         return git("diff", f"{ref}...HEAD"), ref
@@ -129,6 +144,15 @@ def main():
     strict = "--strict" in sys.argv
     staged = "--staged" in sys.argv
 
+    if "--selftest" in sys.argv:
+        assert has_secret("+ KEY=" + '"AKIA' + 'IOSFODNN7EXAMPLE"')
+        assert has_secret("- -----BEGIN " + "RSA PRIVATE KEY-----")
+        assert has_secret('+ api_' + 'key = "abcdef1234567890abcdef12"')
+        assert not has_secret("+ STORY_GRAPH_INGEST_EMAIL=x@y.com")
+        assert not has_secret("+ PROXY_SHARED_SECRET=${PROXY}")
+        print("jev-review: selftest ok")
+        return 0
+
     if staged:
         diff, base = staged_diff()
     else:
@@ -137,6 +161,11 @@ def main():
     if not diff.strip():
         print("jev-review: no changes to review")
         return 0
+
+    if has_secret(diff):
+        print("jev-review: possible secret in diff — not sent to review API")
+        print("jev-review: FLAGGED — inspect the diff for credentials")
+        return 1 if strict else 0
 
     repo = os.path.basename(os.getcwd())
     msg = git("log", "-1", "--format=%s").strip()
@@ -158,9 +187,12 @@ def main():
     if isinstance(route, dict):
         route = route.get("choice") or route.get("answer") or route.get("value")
 
+    # Any route other than "approve" means Jev wants eyes on the diff —
+    # the numeric thresholds alone under-flagged a security_review route.
     flagged = ((p_defect is not None and p_defect >= DEFECT_T)
                or (p_sec is not None and p_sec >= SECURITY_T)
-               or (risk is not None and risk >= RISK_T))
+               or (risk is not None and risk >= RISK_T)
+               or (route is not None and str(route).lower() != "approve"))
 
     def fmt(p):
         return "n/a" if p is None else f"{p:.2f}"

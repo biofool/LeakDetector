@@ -3,7 +3,6 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import { messages, type Lang, type Messages } from './messages.js';
 
 const KEY = 'leakdetector.lang';
-const ONBOARDED_KEY = 'leakdetector.onboarded';
 
 interface LangCtx {
   lang: Lang;
@@ -28,10 +27,5 @@ export function useLang(): LangCtx {
   return useContext(Ctx);
 }
 
-export function isOnboarded(): boolean {
-  return localStorage.getItem(ONBOARDED_KEY) === '1';
-}
-
-export function markOnboarded(): void {
-  localStorage.setItem(ONBOARDED_KEY, '1');
-}
+// No onboarded flag — reporting is the unconditional home (c3b6b11); the
+// flag was written but never read and re-gating / could strand users (#57).
