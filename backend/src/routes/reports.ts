@@ -149,10 +149,11 @@ router.post(
         };
         // The council's submission_channel picks the intake adapter (#35);
         // unimplemented channels and empty targets fall back to email.
-        for (const t of alertTargets(
+        const targets = alertTargets(
           zone.submission_channel, zone.channel_config,
           zone.alert_emails, config.alertFallbackEmail,
-        )) {
+        );
+        for (const t of targets) {
           await queue(client, {
             report_id: id, channel: t.channel, recipient: t.recipient,
             template: t.channel === 'sms' ? 'authority_sms' : 'new_report',
@@ -207,6 +208,26 @@ router.post(
               api_url: `${config.apiPublicUrl}/api/v1/reports/${id}`,
             },
             dedupe_key: `story_graph:${id}`,
+          });
+        }
+        // Ops copy: every report goes to the leakreports@ inbox so a human
+        // can forward it to the correct authority. The routing note is built
+        // from the same `targets` the real alert used, so it can't drift.
+        if (config.leakReportsEmail) {
+          await queue(client, {
+            report_id: id,
+            channel: 'email',
+            recipient: config.leakReportsEmail,
+            template: 'leak_report_copy',
+            payload: {
+              ref, tracking_url, category: input.category, severity: input.severity,
+              description: input.description, council: zone.council_name,
+              zone: zone.name, lat: input.lat, lng: input.lng, created_at: r.created_at,
+              authority_note: targets.length
+                ? targets.map((t) => (t.channel === 'sms' ? `SMS to ${t.recipient}` : t.recipient)).join(', ')
+                : 'no council intake address on file — check the council website',
+            },
+            dedupe_key: `leak_report_copy:${id}`,
           });
         }
         return { id, ref, tracking_url };

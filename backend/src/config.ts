@@ -64,6 +64,9 @@ export const config = {
   // One public-fields-only export email per new report to the story_graph
   // corpus ingest mailbox (#43). Empty → export disabled.
   storyGraphIngestEmail: env('STORY_GRAPH_INGEST_EMAIL'),
+  // Ops copy of every new report — a human forwards it to the correct
+  // authority using the routing note in the body. Empty → disabled.
+  leakReportsEmail: env('LEAK_REPORTS_EMAIL'),
 
   outboxIntervalMs: Number(env('OUTBOX_INTERVAL_MS', '30000')),
   slaSweepMs: Number(env('SLA_SWEEP_MS', '300000')),

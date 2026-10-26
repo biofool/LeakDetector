@@ -33,6 +33,7 @@ PROXY_SHARED_SECRET=${PROXY}
 OUTBOX_INTERVAL_MS=30000
 SLA_SWEEP_MS=300000
 STORY_GRAPH_INGEST_EMAIL=story_graph@aikifield.com
+LEAK_REPORTS_EMAIL=leakreports@aikifield.com
 ENV
   echo "created /opt/leakdetector/leakdetector.env"
   echo "NOTE: copy PROXY_SHARED_SECRET into deploy env on peec.biz — see the comment above it"

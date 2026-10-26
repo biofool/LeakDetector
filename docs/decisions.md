@@ -298,3 +298,22 @@ Adversarial review findings, all fixed in one pass:
 - **#54 photo pipeline.** `processPhoto` runs before the DB transaction (keys are `reports/{uuid}.webp`); stored objects are deleted best-effort if the report insert fails.
 - **#55 CSRF.** `originCheck` middleware on all public mutating endpoints (report create, confirm, volunteer signup/verify/unsubscribe): browser `Origin` must match `PUBLIC_BASE_URL`/`API_PUBLIC_URL`/`CORS_ORIGIN`; absent `Origin` (proxy/curl) stays allowed.
 - **#56 report.php hrefs.** Council `form_url` passes an http/https scheme allowlist; `sms_number` is digit-sanitised like `phone`.
+
+<a id="d-27"></a>
+## D-27 — Ops copy of every report to leakreports@aikifield.com
+
+- **Ask:** every new report also goes to `leakreports@aikifield.com` (ops inbox,
+  Cloudflare-forwards to kenneth@magicsolutions.biz) so a human can route it to
+  the correct authority.
+- **Spec does:** report-create queues one `leak_report_copy` email when
+  `LEAK_REPORTS_EMAIL` is set (empty → disabled), `dedupe_key:
+  leak_report_copy:{id}`.
+- **Routing note:** `authority_note` is built from the same `alertTargets()`
+  result the real authority alert used — the note can never drift from actual
+  delivery. Empty targets → "check the council website".
+- **Privacy:** field-by-field payload like the story_graph export — includes
+  description and coordinates (the authority needs them) but never reporter
+  name/contact.
+- **Receive path (Cloudflare Email Routing):** `leakreports@aikifield.com` →
+  forward `kenneth@magicsolutions.biz` — requires destination verification;
+  until then the zone catch-all sends it to `kronsensei@gmail.com`.

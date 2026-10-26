@@ -52,6 +52,13 @@ const TEMPLATES: Record<string, (p: Record<string, unknown>) => { subject: strin
     subject: `[LeakDetector] ${p.ref} — ${p.severity} ${p.category} leak in ${p.zone}`,
     text: `${p.api_url}\n\nref: ${p.ref}\ncategory: ${p.category}\nseverity: ${p.severity}\nzone: ${p.zone}\ncreated_at: ${p.created_at}\npublic page: ${String(p.tracking_url ?? '').replace(/^https?:\/\//, '')}\nsource: LeakDetector citizen water-leak report\n`,
   }),
+  // Ops copy to the leakreports@ inbox — a human forwards it on. Field by
+  // field like story_graph_export: no reporter name/contact. authority_note
+  // is prebuilt from the same alertTargets the real alert used.
+  leak_report_copy: (p) => ({
+    subject: `[LeakDetector] Report ${p.ref} — ${p.severity} ${p.category} leak in ${p.zone}`,
+    text: `New leak report — forward it to the correct authority listed below.\n\nref: ${p.ref}\ncategory: ${p.category}\nseverity: ${p.severity}\ncouncil: ${p.council}\nzone: ${p.zone}\nlocation: ${p.lat}, ${p.lng}\nreported: ${p.created_at}\ndescription: ${p.description}\ntrack/photos: ${p.tracking_url}\n\nSend to the correct authority:\n${p.authority_note}\n`,
+  }),
   // Compact authority SMS (e.g. Watercare 3130) — subject unused on sms [#35].
   authority_sms: (p) => ({
     subject: '',
