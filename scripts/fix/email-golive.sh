@@ -75,8 +75,15 @@ git fetch -q origin
 A[commit]=$(git rev-parse --short HEAD); echo "main @ ${A[commit]}"
 
 [ -r "$TOKEN_FILE" ] || die "token file not readable: $TOKEN_FILE"
-TOKEN=$(awk '/^CF_API_TOKEN=/{v=substr($0,index($0,"=")+1)} END{print v}' "$TOKEN_FILE" | tr -d '\r"'"'"' ')
-[ -n "$TOKEN" ] || die "CF_API_TOKEN missing/empty in $TOKEN_FILE"
+# Canonical order (biofool/CloudManagement#154): dedicated CF_API_TOKEN
+# first, then LEAK_CFT → LEAK_CFT_dup → CLOUDFLARE_API_TOKEN → CFT.
+TOKEN=""
+for _cf_name in CF_API_TOKEN LEAK_CFT LEAK_CFT_dup CLOUDFLARE_API_TOKEN CFT; do
+  TOKEN=$(awk -v k="$_cf_name" '$0 ~ "^"k"=" {v=substr($0,index($0,"=")+1)} END{print v}' "$TOKEN_FILE" | tr -d '\r"'"'"' ')
+  [ -n "$TOKEN" ] && break
+done
+unset _cf_name
+[ -n "$TOKEN" ] || die "no CF_API_TOKEN / LEAK_CFT / CLOUDFLARE_API_TOKEN / CFT in $TOKEN_FILE"
 echo "local token: present (${#TOKEN} chars)"
 
 "${SSH[@]}" true || die "cannot ssh to $VM"

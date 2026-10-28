@@ -10,6 +10,24 @@ if (existsSync(envPath)) {
 
 const env = (key: string, fallback = ''): string => process.env[key] ?? fallback;
 
+// Canonical CF token order (biofool/CloudManagement#154) — thin TS port of
+// biofool_secrets.resolve_token: first non-empty cleaned value wins
+// (whitespace and one pair of surrounding quotes stripped).
+const cleanToken = (raw: string | undefined): string => {
+  let v = (raw ?? '').trim();
+  if (v.length >= 2 && v[0] === v[v.length - 1] && (v[0] === '"' || v[0] === "'")) {
+    v = v.slice(1, -1).trim();
+  }
+  return v;
+};
+const resolveCft = (...names: string[]): string => {
+  for (const name of names) {
+    const v = cleanToken(process.env[name]);
+    if (v) return v;
+  }
+  return '';
+};
+
 // #49 — a missing JWT_SECRET must never fall back to a public value in
 // production: anyone could sign staff tokens. Dev/test keep the default.
 const jwtSecret = env('JWT_SECRET');
@@ -47,12 +65,14 @@ export const config = {
   },
 
   postmark: { token: env('POSTMARK_TOKEN'), from: env('POSTMARK_FROM', 'leaks@localhost') },
-  // Cloudflare Email Service (REST) — preferred provider when CF_API_TOKEN is
+  // Cloudflare Email Service (REST) — preferred provider when a CF token is
   // set. POST /accounts/{id}/email/sending/send. From domain must be onboarded
   // to Email Sending in the Cloudflare dashboard (cf-bounce records).
+  // CF_API_TOKEN (dedicated Email Sending token) wins, then the shared chain
+  // LEAK_CFT → LEAK_CFT_dup → CLOUDFLARE_API_TOKEN → CFT (#154).
   cloudflare: {
     accountId: env('CF_ACCOUNT_ID'),
-    token: env('CF_API_TOKEN'),
+    token: resolveCft('CF_API_TOKEN', 'LEAK_CFT', 'LEAK_CFT_dup', 'CLOUDFLARE_API_TOKEN', 'CFT'),
     from: env('CF_EMAIL_FROM', 'leaks@localhost'),
   },
   // Generic HTTPS SMS gateway for councils on the 'sms' submission channel
