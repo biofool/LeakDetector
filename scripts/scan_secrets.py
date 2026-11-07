@@ -35,7 +35,13 @@ Exit codes:
 
 from __future__ import annotations
 
+# Canonical source: biofool/starter scripts/scan_secrets.py.
+# Copies in consumer repos are vendored — diff against this version stamp
+# (or run starter/scripts/check-drift.sh) instead of editing in place.
+__version__ = "2026.11.07"
+
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -78,9 +84,10 @@ SKIP_SUFFIXES = {
     ".zip", ".tar", ".gz", ".bz2", ".7z", ".rar", ".xz",
     ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
     ".mp3", ".mp4", ".avi", ".mov", ".wav", ".flv", ".webm",
-    ".lock", ".toml",  # lock/toml files are deps manifests, not source
+    ".lock",
     ".dvc", ".dvcignore",  # DVC pointer files (hashes, not secrets)
-    ".ipynb",  # notebooks — scan separately if needed
+    # NOTE: .toml and .ipynb are SCANNED — pyproject.toml can hold PyPI
+    # tokens and notebooks can carry pasted keys in cells (issue #3).
 }
 
 # Directories to never scan
@@ -131,28 +138,35 @@ def should_skip_file(filepath: str) -> bool:
     return False
 
 
-def scan_file(filepath: Path) -> list[dict]:
-    """Scan a single file for secret patterns. Returns list of findings."""
-    findings = []
-    try:
-        content = filepath.read_text(encoding="utf-8", errors="replace")
-    except (OSError, UnicodeDecodeError) as exc:
-        # Log but don't fail — binary/unreadable files are skipped
-        print(f"  [skip] {filepath}: {exc}", file=sys.stderr)
-        return findings
+def get_staged_content(repo_root: Path, filepath: str) -> str | None:
+    """Return the STAGED blob content for filepath, or None.
 
+    Scanning the working tree lets a commit slip a secret through when the
+    file was staged then edited again (issue #3) — the index is the source
+    of truth for what the commit will contain.
+    """
+    result = subprocess.run(
+        ["git", "show", f":{filepath}"],
+        cwd=repo_root, capture_output=True, timeout=30,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout.decode("utf-8", errors="replace")
+
+
+def scan_content(content: str, filepath: Path) -> list[dict]:
+    """Scan one file's text for secret patterns. Returns list of findings."""
+    findings = []
     for line_num, line in enumerate(content.splitlines(), 1):
         for name, pattern, min_len in SECRET_PATTERNS:
             for match in pattern.finditer(line):
                 match_text = match.group()
                 if len(match_text) < min_len:
                     continue
-                # Skip placeholders
+                # Skip placeholders — check the MATCHED value only, never
+                # the whole line: a comment like "# test key" on the same
+                # line must not suppress a real secret (issue #3).
                 if PLACEHOLDER_RE.search(match_text):
-                    continue
-                # Skip if the full line contains placeholder context markers
-                # (e.g. STALE_KEY=..., fake_key=..., test_key=...)
-                if PLACEHOLDER_RE.search(line):
                     continue
                 # Skip if the whole value after = looks like a placeholder
                 # (e.g. KEY=your-key-here might still match a prefix pattern)
@@ -173,25 +187,44 @@ def scan_file(filepath: Path) -> list[dict]:
                     )
                     if PLACEHOLDER_RE.search(context):
                         continue
-                    # Skip PEM in documentation/template files
-                    if filepath.suffix.lower() in (".md", ".example", ".template"):
-                        continue
-                    if str(filepath).endswith((".example", ".tfvars.example")):
-                        continue
+                    # Doc/template files: a lone BEGIN header is usually an
+                    # illustration — flag only when real key material follows
+                    # (END marker or a base64 block). A real PEM pasted into
+                    # docs must NOT be blanket-skipped (issue #3).
+                    if (filepath.suffix.lower() in (".md", ".example", ".template")
+                            or str(filepath).endswith((".example", ".tfvars.example"))):
+                        window = lines_list[line_num - 1:line_num + 10]
+                        has_material = any(
+                            re.search(r"-----END [A-Z ]*PRIVATE KEY-----|^[A-Za-z0-9+/=]{40,}$", w)
+                            for w in window
+                        )
+                        if not has_material:
+                            continue
 
                 findings.append({
                     "pattern_name": name,
                     "line_number": line_num,
-                    "match_prefix": match_text[:8] + "..." + match_text[-4:],
+                    # No raw characters of the match — audit JSONs get
+                    # committed/shared, and even a prefix narrows a
+                    # brute-force search (biofool/starter#11). A truncated
+                    # sha256 is enough to dedupe repeat findings.
+                    "match_fingerprint": hashlib.sha256(
+                        match_text.encode()
+                    ).hexdigest()[:8],
                     "match_length": len(match_text),
-                    "line_redacted": _redact_line(line, match_text),
+                    "line_redacted": _redact_line(line),
                 })
     return findings
 
 
-def _redact_line(line: str, secret: str) -> str:
-    """Replace the secret value in the line with REDACTED, keeping key name."""
-    return line.replace(secret, "REDACTED").rstrip()
+def _redact_line(line: str) -> str:
+    """Mask EVERY known secret pattern in the line, not just the matched one —
+    a sibling credential on the same line must not leak into CI logs or the
+    uploaded audit JSON (issue #3)."""
+    redacted = line
+    for _name, pattern, _min_len in SECRET_PATTERNS:
+        redacted = pattern.sub("REDACTED", redacted)
+    return redacted.rstrip()
 
 
 def scan_repo(
@@ -199,8 +232,13 @@ def scan_repo(
     files: list[str],
     limit: int | None = None,
     offset: int = 0,
+    staged: bool = False,
 ) -> dict:
-    """Scan a list of files and return an audit report dict."""
+    """Scan a list of files and return an audit report dict.
+
+    When ``staged`` is true the STAGED blob (git show :file) is scanned —
+    the index, not the working tree, is what the commit will contain.
+    """
     all_findings = []
     files_scanned = 0
     files_skipped = 0
@@ -212,11 +250,24 @@ def scan_repo(
             files_skipped += 1
             continue
         filepath = repo_root / filepath_str
-        if not filepath.is_file():
+        if staged:
+            content = get_staged_content(repo_root, filepath_str)
+        else:
+            if not filepath.is_file():
+                files_skipped += 1
+                continue
+            try:
+                content = filepath.read_text(encoding="utf-8", errors="replace")
+            except (OSError, UnicodeDecodeError) as exc:
+                # Log but don't fail — binary/unreadable files are skipped
+                print(f"  [skip] {filepath}: {exc}", file=sys.stderr)
+                files_skipped += 1
+                continue
+        if content is None:
             files_skipped += 1
             continue
         files_scanned += 1
-        findings = scan_file(filepath)
+        findings = scan_content(content, filepath)
         if findings:
             all_findings.append({
                 "file": filepath_str,
@@ -244,11 +295,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--staged-only", action="store_true",
-        help="Scan only staged files (for pre-commit hook use).",
-    )
-    parser.add_argument(
-        "--tracked-only", action="store_true",
-        help="Scan only git-tracked files (skip staged-only check).",
+        help="Scan only staged files, reading the staged blobs (for pre-commit hook use).",
     )
     parser.add_argument(
         "--limit", type=int, default=None,
@@ -294,7 +341,8 @@ def main() -> int:
         return 2
 
     # Scan
-    report = scan_repo(repo_root, files, limit=args.limit, offset=args.offset)
+    report = scan_repo(repo_root, files, limit=args.limit, offset=args.offset,
+                       staged=args.staged_only)
 
     # Print summary
     print(f"Files scanned: {report['files_scanned']}")
@@ -308,7 +356,7 @@ def main() -> int:
             for f in file_finding["findings"]:
                 print(
                     f"  line {f['line_number']}: [{f['pattern_name']}] "
-                    f"{f['match_prefix']} (len={f['match_length']})"
+                    f"sha256:{f['match_fingerprint']} (len={f['match_length']})"
                 )
                 print(f"    > {f['line_redacted']}")
 
