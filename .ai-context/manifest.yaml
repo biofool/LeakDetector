@@ -1,5 +1,5 @@
-repository_revision: 0d2650f7b18701f127817c6ee1e318584dcc5b48
-analysis_timestamp: "2026-10-07T00:00:00Z"
+repository_revision: 71b0843e05678c0bb7db0ec8ac91e02747a1691d
+analysis_timestamp: "2026-11-07"  # delta refresh: scan_secrets/audit-deps canonical sync (71b0843), jev_review local secret-prescan divergence documented; prior rewrite 2026-10-07
 analyzer_version: "context-compiler-v2-manual-rewrite"
 pass_plan:
   session_scope: "Rewrite of stale starter-template context: repo is now a FastAPI MVP mid-pivot to Node/PostGIS + React monorepo"
@@ -48,7 +48,7 @@ limitations:
 artifacts:
   - path: .ai-context/index.md
     source_paths: [README.md, CLAUDE.md, docs/README.md, docs/spec.md, docs/spec-vs-mvp.md]
-    last_verified_revision: 0d2650f
+    last_verified_revision: 71b0843
   - path: .ai-context/quickstart.md
     source_paths: [README.md, CLAUDE.md, legacy/app/main.py, docs/spec.md]
     last_verified_revision: 0d2650f
@@ -105,7 +105,7 @@ artifacts:
     last_verified_revision: 0d2650f
   - path: .ai-context/deltas/latest.yaml
     source_paths: [git status]
-    last_verified_revision: 0d2650f
+    last_verified_revision: 71b0843
 unresolved_unknowns:
   - "UNKNOWN-001: D-08 — SLA hours are placeholders; need each council's Long-Term Plan targets"
   - "UNKNOWN-002: D-11 — confirm with product owner that out-of-zone reports are rejected 422"
