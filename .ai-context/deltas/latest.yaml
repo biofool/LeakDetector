@@ -1,28 +1,33 @@
-# Delta — latest observed change
+# Context Delta — 2026-11-07 refresh (ticket-resolution session, staging)
+# staging was created from main for this session's canonical sync.
+# Supersedes the 2026-10-07 rewrite delta (summary kept at bottom).
 
-delta:
-  revision: 0d2650f
-  previous_revision: d8a8a8f
-  date: "2026-10-07"
-  summary: >
-    Repo pivoted from "template clone with an MVP" to "spec-driven rebuild":
-    docs/ design pack committed (brief/spec/decisions/spec-vs-mvp/README,
-    ~1000 lines), and the entire FastAPI MVP moved root → legacy/ unchanged.
-    README.md + CLAUDE.md gained the pivot notice.
-  changes:
-    - path: docs/
-      change: added
-      detail: "5 files: brief.md, spec.md (622 lines, M1-M11 build guide), decisions.md (D-01..D-18), spec-vs-mvp.md, README.md"
-    - path: legacy/
-      change: moved
-      detail: "git mv app/ static/ tests/ .env.example requirements.txt data/.gitkeep → legacy/*"
-    - path: README.md, CLAUDE.md
-      change: modified
-      detail: "document the MVP-vs-spec split (command sections still show pre-move paths)"
-  worktree_state_at_analysis:
-    - "backend/ — untracked, spec build actively landing (TS/Express/PostGIS, ~17 src files + migrations + node_modules installed)"
-    - "no frontend/ yet"
-  next_expected:
-    - "backend/ committed per spec milestones M1–M7"
-    - "frontend/ scaffolded per M8–M10"
-    - "README/CLAUDE command sections updated for the monorepo layout"
+from_revision: 0d2650f7b18701f127817c6ee1e318584dcc5b48
+to_revision: 71b0843e05678c0bb7db0ec8ac91e02747a1691d
+pass_type: "incremental-refresh"
+branch: staging
+
+changed:
+  - "scripts/scan_secrets.py — synced byte-identical to starter canonical @ 2026.11.07 (71b0843; carries __version__ stamp + sha256-fingerprint match storage)"
+  - "scripts/audit-deps.sh — synced to starter canonical (same commit)"
+  - ".ai-context/{manifest,index} — revision stamps"
+
+known_divergence_not_fixed:
+  - "scripts/jev_review.py carries a LOCAL pre-send secret scan (regex prescan of outgoing diffs, lines ~83-93, has_secret) that canonical starter/scripts/jev_review.py lacks — intentional local addition, recorded as known divergence on biofool/starter#5/#12. Do NOT 'fix' by syncing over it."
+
+reverified:
+  - "cmp scripts/scan_secrets.py ~/projects/starter/scripts/scan_secrets.py — byte-identical"
+  - "grep scripts/jev_review.py — local secret prescan present (lines ~83-93)"
+
+invalidated: []
+conflicts: []
+unknowns_added: []
+unknowns_resolved: []
+
+notes:
+  - "also in window: 530d64e #154 CF email token reads migrated to canonical order; 01bb85f ops report copy to leakreports@aikifield.com (D-27); 0860a34 jev_review non-approve route flagging + the prescan itself; afa4e7d story_graph export address fix"
+
+# ---- Prior delta (2026-10-07 rewrite) ----
+# Manual rewrite: repo pivoted FastAPI MVP -> Node/PostGIS + React
+# monorepo; legacy/* move recorded; backend/ untracked spec build
+# landing; next_expected: backend committed per M1-M7, frontend per M8-M10.

@@ -18,10 +18,19 @@
 #     the deploy script and must warn loudly + log.
 #   - npm gates at severity >= high natively (--audit-level=high). Most other
 #     ecosystem auditors report all severities — stricter than required.
+#   - Skips node_modules/, vendor/, .venv/, and data/audit/ (fix-script audit
+#     artifacts — never source manifests).
 #
-# Exceptions belong in a dated allowlist file with an issue link, applied via
-# each auditor's ignore mechanism (e.g. pip-audit --ignore-vuln, .nsprc /
-# npm audit signatures, composer audit --abandoned / audit.abandoned config).
+# Exceptions live in `vulnerability-allowlist.json` at the repo root — a dated
+# allowlist with an issue link per entry:
+#   {"entries": [
+#     {"id": "GHSA-…", "package": "braces", "ecosystem": "npm",
+#      "reason": "no patched release; build-time dep only",
+#      "issue": "owner/repo#123", "expires": "YYYY-MM-DD"}]}
+# Honored by the npm auditor (leaf advisories filtered via `npm audit --json`)
+# and pip-audit (native --ignore-vuln). Other ecosystems do not yet support
+# exceptions — an unfixable finding there blocks until the auditor gains an
+# ignore mechanism. Expired entries are ignored with a loud warning.
 # Never suppress findings by editing this script.
 set -uo pipefail
 
@@ -43,20 +52,85 @@ missing() { # missing <tool> <manifest> <install-hint>
 
 section() { echo; echo "=== $1 ==="; }
 
+# ---------- allowlist ----------
+# Loads active (unexpired) exception ids into ALLOWLIST_IDS (space-separated).
+ALLOWLIST_IDS=""
+if [ -f vulnerability-allowlist.json ]; then
+  if have python3; then
+    _al_eval=$(python3 - <<'PY'
+import json, datetime
+try:
+    entries = json.load(open("vulnerability-allowlist.json")).get("entries", [])
+except Exception as e:
+    print('echo "!! vulnerability-allowlist.json is invalid JSON: %s"' % e)
+    raise SystemExit
+today = datetime.date.today().isoformat()
+active, expired = [], []
+for e in entries:
+    (expired if e.get("expires") and e["expires"] < today else active).append(e.get("id", ""))
+print('ALLOWLIST_IDS="%s"' % " ".join(i for i in active if i))
+for i in expired:
+    print('echo "!! allowlist entry %s is EXPIRED — ignored (renew the issue or fix the dep)"' % i)
+PY
+)
+    # Issue #3: never eval generated text — parse the two output shapes
+    # (ALLOWLIST_IDS="…" and echo "!! …") literally instead. A hostile
+    # allowlist id could otherwise execute in CI + deploy preflights.
+    ALLOWLIST_IDS="$(printf '%s\n' "$_al_eval" | sed -n 's/^ALLOWLIST_IDS="\(.*\)"$/\1/p')"
+    printf '%s\n' "$_al_eval" | sed -n 's/^echo "\(!! .*\)"$/\1/p' | sed 's/\\"/"/g'
+  else
+    echo "!! vulnerability-allowlist.json present but python3 unavailable — allowlist ignored."
+  fi
+fi
+
+# npm_json_audit <dir>: runs `npm audit --json` and fails only on leaf
+# advisories (severity >= high, matching --audit-level=high) NOT in the
+# allowlist. Parent packages flagged purely through an allowlisted leaf carry
+# no advisory object of their own, so leaf-only filtering is sound.
+# Requires node (implied by npm).
+npm_json_audit() {
+  local dir="$1" tmp rc
+  tmp=$(mktemp)
+  (cd "$dir" && npm audit --audit-level=high --json >"$tmp" 2>/dev/null || true)
+  ALLOWLIST="$ALLOWLIST_IDS" node - "$tmp" <<'JS'
+const fs = require("fs");
+const al = new Set((process.env.ALLOWLIST || "").split(" ").filter(Boolean));
+let d; try { d = JSON.parse(fs.readFileSync(process.argv[2], "utf8")); }
+catch { console.log("npm audit produced no JSON — cannot verify findings"); process.exit(1); }
+const bad = new Set();
+const gated = new Set(["high", "critical"]);
+for (const [name, v] of Object.entries(d.vulnerabilities || {}))
+  for (const via of v.via || [])
+    if (typeof via === "object" && via.url && gated.has(via.severity)) {
+      const id = via.url.split("/").pop();
+      if (!al.has(id)) bad.add(`${id} [${via.severity}] ${via.title || name}`);
+    }
+if (bad.size) { console.log("Non-allowlisted advisories:"); [...bad].forEach(b => console.log("  " + b)); process.exit(1); }
+console.log("npm audit: findings, if any, are covered by vulnerability-allowlist.json");
+JS
+  rc=$?
+  rm -f "$tmp"
+  return "$rc"
+}
+
 # ---------- npm / pnpm / yarn ----------
 for lock in **/package-lock.json; do
-  case "$lock" in */node_modules/*) continue ;; esac
+  case "$lock" in */node_modules/*|data/audit/*|*/data/audit/*) continue ;; esac
   section "npm audit: $lock"
   found=1
   if have npm; then
-    (cd "$(dirname "$lock")" && npm audit --audit-level=high) || status=1
+    if [ -n "$ALLOWLIST_IDS" ]; then
+      npm_json_audit "$(dirname "$lock")" || status=1
+    else
+      (cd "$(dirname "$lock")" && npm audit --audit-level=high) || status=1
+    fi
   else
     missing npm "$lock" "install Node.js/npm"
   fi
 done
 
 for lock in **/pnpm-lock.yaml; do
-  case "$lock" in */node_modules/*) continue ;; esac
+  case "$lock" in */node_modules/*|data/audit/*|*/data/audit/*) continue ;; esac
   section "pnpm audit: $lock"
   found=1
   if have pnpm; then
@@ -67,7 +141,7 @@ for lock in **/pnpm-lock.yaml; do
 done
 
 for lock in **/yarn.lock; do
-  case "$lock" in */node_modules/*) continue ;; esac
+  case "$lock" in */node_modules/*|data/audit/*|*/data/audit/*) continue ;; esac
   section "yarn audit: $lock"
   found=1
   if have yarn; then
@@ -85,20 +159,22 @@ done
 
 # ---------- Python ----------
 for req in **/requirements*.txt; do
-  case "$req" in */node_modules/*|*/.venv/*|*/venv/*) continue ;; esac
+  case "$req" in */node_modules/*|*/.venv/*|*/venv/*|data/audit/*|*/data/audit/*) continue ;; esac
   section "pip-audit: $req"
   found=1
+  _ign=()
+  for _id in $ALLOWLIST_IDS; do _ign+=(--ignore-vuln "$_id"); done
   if have pip-audit; then
-    pip-audit -r "$req" || status=1
+    pip-audit -r "$req" "${_ign[@]}" || status=1
   elif have pipx; then
-    pipx run pip-audit -r "$req" || status=1
+    pipx run pip-audit -r "$req" "${_ign[@]}" || status=1
   else
     missing pip-audit "$req" "pipx install pip-audit  (or: pip install pip-audit)"
   fi
 done
 
 for lock in **/uv.lock; do
-  case "$lock" in */.venv/*) continue ;; esac
+  case "$lock" in */.venv/*|data/audit/*|*/data/audit/*) continue ;; esac
   section "pip-audit via uv export: $lock"
   found=1
   if have uv && have pip-audit; then
@@ -134,7 +210,7 @@ done
 
 # ---------- PHP ----------
 for lock in **/composer.lock; do
-  case "$lock" in */vendor/*) continue ;; esac
+  case "$lock" in */vendor/*|data/audit/*|*/data/audit/*) continue ;; esac
   section "composer audit: $lock"
   found=1
   if have composer; then
@@ -146,7 +222,7 @@ done
 
 # composer.json without a committed lockfile cannot be audited — flag it.
 for manifest in **/composer.json; do
-  case "$manifest" in */vendor/*) continue ;; esac
+  case "$manifest" in */vendor/*|data/audit/*|*/data/audit/*) continue ;; esac
   dir=$(dirname "$manifest")
   [ -f "$dir/composer.lock" ] && continue
   echo "!! AUDIT GAP: $manifest has no committed composer.lock — cannot audit."
@@ -168,7 +244,7 @@ done
 
 # ---------- Go ----------
 for mod in **/go.mod; do
-  case "$mod" in */vendor/*) continue ;; esac
+  case "$mod" in */vendor/*|data/audit/*|*/data/audit/*) continue ;; esac
   section "govulncheck: $mod"
   found=1
   if have govulncheck; then
@@ -204,7 +280,7 @@ done
 # Gradle: no lightweight local auditor — use GitHub dependency review
 # (gradle dependency submission) or OWASP dependency-check. Flag presence.
 for build in **/build.gradle **/build.gradle.kts; do
-  case "$build" in */node_modules/*|*/.gradle/*) continue ;; esac
+  case "$build" in */node_modules/*|*/.gradle/*|data/audit/*|*/data/audit/*) continue ;; esac
   echo "!! NOTE: $build — Gradle deps are not covered by this script."
   echo "   Configure gradle dependency submission + dependency-review-action,"
   echo "   or run OWASP dependency-check in CI."
