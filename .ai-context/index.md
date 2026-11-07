@@ -1,8 +1,7 @@
 # AI Context Index — biofool/LeakDetector
 
-> **Revision**: `0d2650f` (HEAD — "Add target-design spec docs; move FastAPI
-> MVP to legacy/")
-> **Last analyzed**: 2026-10-07
+> **Revision**: `71b0843` (staging, 2026-11-07)
+> **Last analyzed**: 2026-10-07, delta-refreshed 2026-11-07
 > **Staleness check**: compare `git rev-parse HEAD` with revision above; if
 > different, re-run Context Compiler on changed files. **`backend/` is
 > volatile** — the spec build was landing during this analysis.
