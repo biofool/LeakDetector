@@ -1,0 +1,483 @@
+=== PHASE 1A: directory map (maxdepth 3)
+.
+./README.md
+./backend
+./backend/README.md
+./backend/tests
+./backend/tests/clientip.test.ts
+./backend/tests/globalSetup.ts
+./backend/tests/contacts.test.ts
+./backend/tests/volunteers.test.ts
+./backend/tests/backfill.test.ts
+./backend/tests/submission.test.ts
+./backend/tests/setup.ts
+./backend/tests/patch.test.ts
+./backend/tests/nearby.test.ts
+./backend/tests/helpers.ts
+./backend/tests/reports.test.ts
+./backend/tests/storygraph.test.ts
+./backend/tests/sendmail.test.ts
+./backend/tests/leakreportcopy.test.ts
+./backend/scripts
+./backend/scripts/seed.ts
+./backend/scripts/import-zones.ts
+./backend/scripts/import-contacts.ts
+./backend/migrations
+./backend/migrations/006_backfill_status_history.sql
+./backend/migrations/005_submission_channels.sql
+./backend/migrations/003_status_history.sql
+./backend/migrations/004_council_contacts.sql
+./backend/migrations/002_outbox_report_idx.sql
+./backend/migrations/001_init.sql
+./backend/migrations/007_volunteers.sql
+./backend/migrations/008_volunteer_verified.sql
+./backend/src
+./backend/src/services
+./backend/src/types.ts
+./backend/src/routes
+./backend/src/middleware
+./backend/src/util
+./backend/src/app.ts
+./backend/src/worker.ts
+./backend/src/migrate.ts
+./backend/src/index.ts
+./backend/src/db.ts
+./backend/src/config.ts
+./backend/package-lock.json
+./backend/data
+./backend/data/council-contacts.json
+./backend/data/zones
+./backend/jest.config.cjs
+./backend/tsconfig.json
+./backend/package.json
+./backend/Dockerfile
+./scripts
+./scripts/e2e-backend-test.sh
+./scripts/deploy.sh
+./scripts/jev_review.py
+./scripts/psql-remote.sh
+./scripts/__pycache__
+./scripts/__pycache__/scan_secrets.cpython-314.pyc
+./scripts/fix
+./scripts/fix/email-golive.sh
+./scripts/audit-deps.sh
+./scripts/scan_secrets.py
+./scripts/deploy-placeholder.sh
+./EXECUTIVE-SUMMARY.md
+./LICENSE
+./frontend
+./frontend/README.md
+./frontend/src
+./frontend/src/pages
+./frontend/src/App.tsx
+./frontend/src/index.css
+./frontend/src/util
+./frontend/src/main.tsx
+./frontend/src/components
+./frontend/src/i18n
+./frontend/src/api
+./frontend/package-lock.json
+./frontend/vite.config.ts
+./frontend/e2e
+./frontend/e2e/public-report-view.spec.ts
+./frontend/tsconfig.json
+./frontend/index.html
+./frontend/package.json
+./frontend/public
+./frontend/public/icon.svg
+./frontend/public/og-image.png
+./frontend/playwright.config.ts
+./AGENTS.md
+./CLAUDE.md
+./docker-compose.yml
+./TechnicalMarketingReadMe.md
+./eslint.config.mjs
+./deploy
+./deploy/remote-setup.sh
+./deploy/peecbiz
+./deploy/peecbiz/report.php
+./deploy/peecbiz/htaccess
+./deploy/peecbiz/api-proxy.php
+./deploy/peec-placeholder
+./deploy/peec-placeholder/icon.svg
+./deploy/peec-placeholder/index.html
+./pyproject.toml
+./wiki
+./wiki/Development.md
+./wiki/Security.md
+./wiki/Architecture.md
+./wiki/Home.md
+./docs
+./docs/README.md
+./docs/decisions.md
+./docs/spec.md
+./docs/brief.md
+./docs/spec-vs-mvp.md
+./docs/test-plan-e2e.md
+./TECHNOLOGY-UNDERPINNINGS.md
+
+=== PHASE 1B: files >150 lines with signatures
+./backend/tests/volunteers.test.ts (292 lines)
+  3:import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+  4:import request from 'supertest';
+  5:import { createApp } from '../src/app.js';
+  6:import { pool } from '../src/db.js';
+  8:const app = createApp();
+  11:const WLG = { lat: -41.2924, lng: 174.7768 };
+  19:  const login = await request(app)
+  25:const signup = (body: Record<string, unknown>) =>
+  28:const tokenFor = async (email: string): Promise<string> => {
+  34:const verifyViaPost = (token: string) =>
+  39:    const res = await request(app).get('/api/v1/councils');
+  41:    const demo = res.body.results.find((c: { name: string }) => c.name === 'Demo City Council');
+  49:    const res = await signup({
+  74:    const token = await tokenFor('rangi@example.nz');
+  75:    const get = await request(app).get(`/api/v1/volunteers/verify?token=${token}`);
+  83:    const post = await verifyViaPost(token);
+  91:    const again = await request(app).get(`/api/v1/volunteers/verify?token=${token}`);
+  96:    const res = await signup({
+  101:    const create = await request(app)
+  112:    const res = await signup({
+  125:    const res = await signup({
+  144:    const res = await request(app)
+  155:    const anon = await request(app).get('/api/v1/volunteers');
+  158:    const res = await request(app)
+  162:    const rangi = res.body.results.find((v: { email: string }) => v.email === 'rangi@example.nz');
+  175:    const login = await request(app)
+  179:    const ok = await request(app)
+  185:    const res = await request(app)
+  196:    const create = await request(app)
+  206:    const emails = rows.map((r) => r.recipient).sort();
+  214:    const create = await request(app)
+  236:    const token = await tokenFor('point@example.nz');
+  237:    const get = await request(app).get(`/api/v1/volunteers/unsubscribe?token=${token}`);
+  245:    const post = await request(app)
+  254:    const again = await request(app).get(`/api/v1/volunteers/unsubscribe?token=${token}`);
+  256:    const bogus = await request(app).get('/api/v1/volunteers/unsubscribe?token=not-a-uuid');
+  258:    const badPost = await request(app)
+  264:    const res = await signup({
+  281:    const create = await request(app)
+./backend/tests/patch.test.ts (240 lines)
+  2:import { afterAll, describe, expect, it } from '@jest/globals';
+  3:import request from 'supertest';
+  4:import { createApp } from '../src/app.js';
+  5:import { pool } from '../src/db.js';
+  6:import { tinyPng } from './helpers.js';
+  8:const app = createApp();
+  10:const SPOT = { lat: -41.28, lng: 174.77 };
+  13:  const res = await request(app)
+  22:  const res = await request(app)
+  31:    const r = await makeReport();
+  32:    const res = await request(app).patch(`/api/v1/reports/${r.id}`).send({ status: 'investigating' });
+  37:    const token = await staffToken();
+  38:    const r = await makeReport();
+  39:    const inv = await request(app)
+  48:    const done = await request(app)
+  59:    const token = await staffToken();
+  60:    const r = await makeReport();
+  61:    const res = await request(app)
+  66:    const back = await request(app)
+  75:    const token = await staffToken();
+  76:    const a = await makeReport();
+  77:    const b = await makeReport();
+  78:    const c = await makeReport();
+  83:    const chain = await request(app)
+  92:    const r = await makeReport();
+  93:    const res = await request(app)
+  101:    const token = await staffToken();
+  102:    const a = await makeReport();
+  103:    const b = await makeReport();
+  104:    const c = await makeReport();
+  105:    const ok = await request(app)
+  110:    const chain = await request(app)
+  118:    const token = await staffToken();
+  119:    const create = await request(app)
+  124:    const id = create.body.id;
+  136:    const token = await staffToken();
+  137:    const create = await request(app)
+  142:    const got = await request(app)
+  145:    const photoId = got.body.photos[0].id;
+  146:    const oldPath = (got.body.photos[0].url as string).replace(/^https?:\/\/[^/]+/, '');
+  147:    const oldThumb = (got.body.photos[0].thumb_url as string).replace(/^https?:\/\/[^/]+/, '');
+  150:    const hide = await request(app)
+  157:    const pub = await request(app).get(`/api/v1/reports/${create.body.id}`);
+  163:    const staffView = await request(app)
+  167:    const newPath = (staffView.body.photos[0].url as string).replace(/^https?:\/\/[^/]+/, '');
+  173:    const token = await staffToken();
+  174:    const r = await makeReport(); // minor/road → 48 h
+  175:    const res = await request(app)
+  180:    const hours = (new Date(res.body.sla_due_at).getTime() - new Date(res.body.created_at).getTime()) / 3.6e6;
+  187:    const token = await staffToken();
+  188:    const r = await makeReport();
+  189:    const inv = await request(app)
+  195:    const detail = await request(app).get(`/api/v1/reports/${r.id}`);
+  197:    const hist = detail.body.status_history as { from_status: string | null; to_status: string }[];
+  205:    const token = await staffToken();
+  206:    const parent = await makeReport();
+  207:    const child = await makeReport();
+  208:    const link = await request(app)
+  214:    const res = await request(app).post(`/api/v1/reports/${child.id}/confirm`);
+  218:    const ok = await request(app).post(`/api/v1/reports/${parent.id}/confirm`);
+  223:    const r = await makeReport();
+  224:    const csrf = await request(app)
+  230:    const ok = await request(app)
+  237:    const res = await request(app).get('/healthz');
+./backend/src/routes/volunteers.ts (264 lines)
+  9:import { Router } from 'express';
+  10:import { z } from 'zod';
+  11:import { query, pool } from '../db.js';
+  12:import { config } from '../config.js';
+  13:import { ApiError } from '../middleware/errors.js';
+  14:import { rateLimit } from '../middleware/rateLimit.js';
+  15:import { originCheck } from '../middleware/originCheck.js';
+  16:import { requireStaff } from '../middleware/staffAuth.js';
+  17:import { zoneForPoint } from '../services/zones.js';
+  18:import { queue } from '../services/outbox.js';
+  19:import { HELP_TYPES } from '../types.js';
+  21:const router = Router();
+  24:const signupSchema = z.object({
+  42:      const input = signupSchema.parse(req.body);
+  48:        const zone = await zoneForPoint(input.lng, input.lat);
+  70:      const v = rows[0];
+  104:const esc = (s: string) =>
+  107:const page = (en: string, mi: string, form = '') =>
+  113:const confirmForm = (action: 'verify' | 'unsubscribe', token: string, label: string) =>
+  120:  const token = String(raw ?? '');
+  132:const tokenFromBody = (req: { body: unknown }): string => {
+  133:  const b = req.body as Record<string, unknown> | undefined;
+  139:    const v = await byToken(req.query.token);
+  177:    const v = await byToken(req.query.token);
+  221:    const cond = (sql: string, v: unknown) => { vals.push(v); where.push(sql.replace('?', `$${vals.length}`)); };
+  222:    const intParam = (k: string): number | undefined => {
+  224:      const n = Number(req.query[k]);
+  231:      const councilId = intParam('council_id');
+  232:      const zoneId = intParam('council_zone_id');
+  264:export default router;
+./backend/src/routes/reports.ts (668 lines)
+  3:import { Router } from 'express';
+  4:import multer from 'multer';
+  5:import { z } from 'zod';
+  6:import { query, withTx } from '../db.js';
+  7:import { config } from '../config.js';
+  8:import { ApiError } from '../middleware/errors.js';
+  9:import { rateLimit } from '../middleware/rateLimit.js';
+  10:import { originCheck } from '../middleware/originCheck.js';
+  11:import { requireStaff, optionalStaff, canAccess } from '../middleware/staffAuth.js';
+  12:import { computeSLA } from '../services/sla.js';
+  13:import { zoneForPoint } from '../services/zones.js';
+  14:import { findNearby, effectiveRadius } from '../services/duplicates.js';
+  15:import { processPhoto, photoUrl, removeKeys, copyToFreshKey } from '../services/photos.js';
+  16:import type { ProcessedPhoto } from '../services/photos.js';
+  17:import { queue } from '../services/outbox.js';
+  18:import { alertTargets } from '../services/submission.js';
+  19:import { toReport } from '../util/serialize.js';
+  20:import { toRef } from '../util/ref.js';
+  21:import { LOCATIONS, SEVERITIES, STATUSES, OPEN_STATUSES } from '../types.js';
+  22:import type { Location, Severity, Status, ReportRow, PhotoRow } from '../types.js';
+  24:const router = Router();
+  26:const upload = multer({
+  31:const REPORT_SELECT = `
+  40:const NEARBY_OPEN_COL = `, (SELECT count(*) FROM reports n WHERE n.id <> r.id AND n.is_duplicate_of IS NULL
+  50:const createSchema = z.object({
+  61:const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+  62:const NZ_MOBILE = /^(\+?64|0)2\d{7,9}$/;
+  63:const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  66:function normaliseContact(raw: string | undefined): string | null {
+  68:  const v = raw.trim();
+  71:  const digits = v.replace(/[\s-]/g, '');
+  73:    const rest = digits.startsWith('+') ? digits.slice(3) : digits.startsWith('64') ? digits.slice(2) : digits.slice(1);
+  91:      const input = createSchema.parse(req.body);
+  92:      const files = (req.files as Express.Multer.File[]) ?? [];
+  110:      const contact = normaliseContact(input.reporter_contact);
+  111:      const zone = await zoneForPoint(input.lng, input.lat);
+  115:      const sla_due_at = computeSLA(input.severity, input.category, new Date());
+  117:      const report = await withTx(async (client) => {
+  126:        const r = rows[0] as ReportRow;
+  127:        const id = Number(r.id);
+  132:        const ref = toRef(id);
+  133:        const tracking_url = `${config.publicBaseUrl}/r/${id}`;
+  145:        const cc = contact?.includes('@') ? contact : undefined;
+  146:        const payload = {
+  152:        const targets = alertTargets(
+  236:      const duplicates = await findNearby(input.lat, input.lng, {
+  270:const nearbySchema = z.object({
+  282:      const q = nearbySchema.parse(req.query);
+  283:      const radius = effectiveRadius(q.radius_m ?? 30, q.accuracy_m);
+  284:      const results = await findNearby(q.lat, q.lng, { radiusM: q.radius_m ?? 30, accuracyM: q.accuracy_m });
+  310:    const row = rows[0];
+  312:    const staff = Boolean(req.user && canAccess(req.user, row.council_id));
+  327:    const body = z.object({ is_hidden: z.boolean() }).parse(req.body);
+  329:    const row = rows[0] as ReportRow | undefined;
+  338:    const photo = photos[0];
+  371:    const stale = [photo.storage_key, photo.thumb_key].filter((k) => k !== storageKey && k !== thumbKey);
+  387:      const r = rows[0];
+  395:      const upd = await query(
+  415:const patchSchema = z.object({
+  426:    const patch = patchSchema.parse(req.body);
+  428:    const row = rows[0] as ReportRow | undefined;
+  438:    const updated = await withTx(async (client) => {
+  441:      const set = (col: string, v: unknown) => { vals.push(v); sets.push(`${col} = $${vals.length}`); };
+  445:        const closing = patch.status === 'resolved' || patch.status === 'closed_private';
+  451:        const sev = (patch.severity ?? row.severity) as Severity;
+  452:        const loc = (patch.location_type ?? row.location_type) as Location;
+  467:          const target = t[0];
+  490:      const id = Number(out[0].id);
+  497:      const ref = toRef(id);
+  501:      const closing =
+  556:    const one = (v: unknown): string | undefined =>
+  560:    const staffScoped = req.user && req.user.role !== 'platform_admin';
+  561:    const isStaff = Boolean(req.user);
+  562:    const bad = (msg: string) => new ApiError(400, 'validation_failed', msg);
+  566:    const cond = (sql: string, v?: unknown) => {
+  570:    const csv = (s?: string) => (s ? s.split(',').map((x) => x.trim()).filter(Boolean) : null);
+  572:    const statuses = csv(q.status);
+  577:    const categories = csv(q.category);
+  582:    const severities = csv(q.severity);
+  588:      const zid = Number(q.council_zone_id);
+  597:      const parts = q.bbox.split(',').map(Number);
+  604:    const SLA_FILTERS = ['on_track', 'due_soon', 'breached'];
+  606:    const open = `r.status IN ('${OPEN_STATUSES.join("','")}') AND r.is_duplicate_of IS NULL`;
+  620:    const pageNum = Number(q.page ?? 1);
+  621:    const limitNum = Number(q.limit ?? 50);
+  624:    const page = Math.floor(pageNum);
+  625:    const limit = Math.min(Math.floor(limitNum), 200);
+  626:    const SORTS = ['sla_due_at', '-created_at'];
+  629:    const orderBy = q.sort === 'sla_due_at' || (!q.sort && isStaff) ? 'r.sla_due_at ASC' : 'r.created_at DESC';
+  630:    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  632:    const extraCols = isStaff ? NEARBY_OPEN_COL : '';
+  668:export default router;
+./backend/src/worker.ts (207 lines)
+  3:import { pool } from './db.js';
+  4:import { config } from './config.js';
+  5:import { emailConfigured, queue, send } from './services/outbox.js';
+  6:import { sendSms, smsBody } from './services/submission.js';
+  7:import { toRef } from './util/ref.js';
+  76:  const client = await pool.connect();
+  117:      const msg = TEMPLATES[row.template](row.payload ?? {});
+  120:      const cc = row.template === 'new_report' && typeof row.payload?.cc === 'string'
+  133:        const attempts = row.attempts + 1;
+  134:        const err = e instanceof Error ? e.message : String(e);
+  166:  const client = await pool.connect();
+  181:      const payload = {
+  186:      const alertEmails = (r.alert_emails as string[]).length
+./scripts/jev_review.py (212 lines)
+  23:import json
+  24:import os
+  25:import re
+  26:import subprocess
+  27:import sys
+  28:import urllib.error
+  29:import urllib.request
+  79:def git(*args):
+  93:def has_secret(diff):
+  97:def outgoing_diff(ref):
+  107:def staged_diff():
+  111:def jev(state):
+  131:def probability(answer):
+  142:def main():
+  197:    def fmt(p):
+./scripts/scan_secrets.py (377 lines)
+  36:from __future__ import annotations
+  43:import argparse
+  44:import hashlib
+  45:import json
+  46:import os
+  47:import re
+  48:import subprocess
+  49:import sys
+  50:from datetime import UTC, datetime
+  51:from pathlib import Path
+  101:def run_git(args: list[str], repo_root: Path) -> str:
+  115:def get_tracked_files(repo_root: Path) -> list[str]:
+  121:def get_staged_files(repo_root: Path) -> list[str]:
+  127:def should_skip_file(filepath: str) -> bool:
+  141:def get_staged_content(repo_root: Path, filepath: str) -> str | None:
+  157:def scan_content(content: str, filepath: Path) -> list[dict]:
+  220:def _redact_line(line: str) -> str:
+  230:def scan_repo(
+  288:def main() -> int:
+./frontend/src/pages/DashboardPage.tsx (281 lines)
+  3:import { useCallback, useEffect, useState } from 'react';
+  4:import { Link } from 'react-router-dom';
+  5:import { login, session, listReports, patchReport, patchPhotoHidden, getReport, listVolunteers, ApiError } from '../api/reports.js';
+  6:import type { Report, StaffSession, Status, Volunteer } from '../api/reports.js';
+  7:import { StatusBadge, SlaBadge } from '../components/StatusBadge.js';
+  8:import { timeAgo } from '../util/format.js';
+  9:import { useLang } from '../i18n/LanguageContext.js';
+  19:export default function DashboardPage() {
+  34:  const toggle = (id: number) => {
+  44:  const refresh = useCallback(async () => {
+  47:      const params =
+  51:      const r = await listReports({ ...params, limit: 200 }, sess.token);
+  66:    const t = setInterval(refresh, 30_000);
+  86:              const s = await login(email, password);
+  109:  const act = async (id: number, patch: Parameters<typeof patchReport>[1]) => {
+  112:      const updated = await patchReport(id, patch, sess.token);
+./frontend/src/pages/PublicReportViewPage.tsx (151 lines)
+  2:import { useEffect, useState } from 'react';
+  3:import { Link, useParams } from 'react-router-dom';
+  4:import LeafletMap from '../components/LeafletMap.js';
+  5:import { StatusBadge, SlaBadge } from '../components/StatusBadge.js';
+  6:import CouncilContact from '../components/CouncilContact.js';
+  7:import { ApiError, getReport } from '../api/reports.js';
+  8:import type { Report, Status } from '../api/reports.js';
+  9:import { timeAgo } from '../util/format.js';
+  10:import { useLang } from '../i18n/LanguageContext.js';
+  20:function timeline(report: Report): Step[] {
+  23:  const current = steps.indexOf(report.status);
+  26:  const hist = report.status_history ?? [];
+  27:  const atFor = (status: Status): string | null =>
+  47:export default function PublicReportViewPage() {
+./frontend/src/components/LeakReportForm.tsx (243 lines)
+  3:import { useEffect, useState } from 'react';
+  4:import LeafletMap from './LeafletMap.js';
+  5:import NearbySheet from './NearbySheet.js';
+  6:import { createReport, nearby } from '../api/reports.js';
+  7:import type { CreatedReport, Location, NearbyResult, Severity } from '../api/reports.js';
+  8:import { useLang } from '../i18n/LanguageContext.js';
+  15:export default function LeakReportForm() {
+  45:  const checkNearby = async () => {
+  63:  const submit = async () => {
+  67:    const form = new FormData();
+./frontend/src/i18n/messages.ts (541 lines)
+  5:export type Lang = 'en' | 'mi';
+  7:const en = {
+  277:export type Messages = Widen<typeof en>;
+  541:export const messages: Record<Lang, Messages> = { en, mi };
+./frontend/src/api/reports.ts (199 lines)
+  2:const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://127.0.0.1:8080';
+  3:const API = `${BASE.replace(/\/$/, '')}/api/v1`;
+  5:export type Location = 'footpath' | 'berm' | 'road' | 'water_meter' | 'outside_tap' | 'other_public';
+  6:export type Severity = 'major' | 'minor';
+  7:export type Status = 'received' | 'investigating' | 'contractor_assigned' | 'resolved' | 'closed_private';
+  8:export type SlaStatus = 'on_track' | 'due_soon' | 'breached' | 'met' | 'missed' | 'n/a';
+  10:export interface CouncilContact {
+  18:export interface Report {
+  47:export interface NearbyResult {
+  60:export interface CreatedReport {
+  70:export class ApiError extends Error {
+  80:  const res = await fetch(`${API}${path}`, { ...init, headers });
+  81:  const body = res.status === 204 ? null : await res.json().catch(() => null);
+  83:    const e = body?.error ?? {};
+  89:export const createReport = (form: FormData) =>
+  92:export const nearby = (lat: number, lng: number, radiusM = 30, accuracyM?: number) => {
+  93:  const p = new URLSearchParams({ lat: String(lat), lng: String(lng), radius_m: String(radiusM) });
+  98:export const getReport = (id: number | string, token?: string) =>
+  101:export const confirmReport = (id: number | string) =>
+  104:export interface ListParams {
+  117:export const listReports = (params: ListParams = {}, token?: string) => {
+  118:  const p = new URLSearchParams();
+  125:export interface PatchBody {
+  134:export const patchReport = (id: number | string, patch: PatchBody, token: string) =>
+  137:export const patchPhotoHidden = (reportId: number | string, photoId: number | string, hidden: boolean, token: string) =>
+  143:export interface StaffSession {
+  148:export const login = (email: string, password: string) =>
+  153:export type HelpType = 'hands_on' | 'routing';
+  155:export interface Council {
+  161:export const listCouncils = () => req<{ results: Council[] }>('/councils');
+  163:export interface VolunteerSignup {
+  174:export const signupVolunteer = (body: VolunteerSignup) =>
+  178:export interface Volunteer {
+  189:export const listVolunteers = (token: string) =>
+  192:const TOKEN_KEY = 'ld_staff_token';
+  193:export const session = {
