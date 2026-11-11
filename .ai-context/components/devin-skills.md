@@ -1,32 +1,28 @@
 # Component: `.devin/skills/`
 
-**Status**: OBSERVED — large bundled skill library inherited from
-`biofool/starter` (~100 SKILL.md files), NOT project-specific.
+**Status**: OBSERVED — trimmed vendored set synced from `biofool/starter`
+(issue #66). Selection is recorded in `.devin/skills-manifest.json`
+(`keep` list); re-sync with starter's `scripts/sync-skills.sh`.
 
 ## What's here
 
-- **Brave Search suite**: `web-search`, `news-search`, `images-search`,
-  `videos-search`, `suggest`, `spellcheck`, `local-pois`,
-  `local-descriptions`, `llm-context`, `answers`, `bx` — all need
-  `BRAVE_SEARCH_API_KEY` for live calls
-- **ponytail suite**: `ponytail`, `ponytail-review`, `ponytail-audit`,
-  `ponytail-debt`, `ponytail-gain`, `ponytail-help` — minimal-diff
-  discipline
-- **UI/UX + site-builder suite**: `senior-ui-ux-orchestrator`,
-  `webapp-ui-skill`, `marketing-site-skill`, `ui-ux-pro-max`, Figma/Stitch
-  bridges, SEO/LLM site skills, `deploy-orchestrator`,
-  `server-provisioner`, `domain-*`, `ssl-and-security-hardener`, …
-- **Cloudflare suite**: `cloudflare`, `wrangler`, `workers-best-practices`,
-  `durable-objects`, `agents-sdk`, `sandbox-*`, `turnstile-spin`, …
-- **PR/newsjack suite**: `angle-generator`, `fact-check`,
-  `find-journalists`, `coverage-tracker`, `newsjack-*`, `pr-*`, …
+- **Brave Search suite** (`core` set): `web-search`, `news-search`,
+  `images-search`, `videos-search`, `suggest`, `spellcheck`,
+  `local-pois`, `local-descriptions`, `llm-context`, `answers`, `bx`,
+  `search` — all need `BRAVE_SEARCH_API_KEY` for live calls
+- **Launch/infra**: `server-provisioner`, `deploy-orchestrator`,
+  `domain-dns-configurator`, `domain-name-generator`,
+  `domain-registrar-advisor`, `ssl-and-security-hardener`,
+  `webmaster-registrar` — Railway launch + council DNS/TLS work
+- **Frontend/security**: `webapp-ui-skill`, `marketing-site-skill`,
+  `web-security-architect` — frontend build M8–M10, public civic form
+- **Ops**: `automated-browser-solutions` (e2e on this host), `shared/`
+  (support files referenced by the UI skills)
 
-## Relevance to this project
+## What was removed
 
-Most are cargo from the template. The ones that plausibly matter for
-LeakDetector's actual work: `server-provisioner`/`deploy-orchestrator`/
-`domain-*`/`ssl-and-security-hardener`/`webmaster-registrar` (Railway
-launch + council DNS/TLS), `web-security-architect` (public civic form),
-`webapp-ui-skill`/`marketing-site-skill` (frontend build M8–M10),
-`automated-browser-solutions` (e2e on this host), Brave skills only if a
-search need arises.
+The rest of the starter library (~111 dirs: Figma/Stitch, PR/newsjack,
+SEO/LLM site-building, Cloudflare platform, ponytail, and other suites)
+was template cargo with no LeakDetector use. If a removed skill becomes
+relevant, add its name to `keep` in `.devin/skills-manifest.json` and
+re-run starter's `scripts/sync-skills.sh`.
