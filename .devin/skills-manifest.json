@@ -1,0 +1,19 @@
+{
+  "canonical": "biofool/starter",
+  "version": "2026.11.12",
+  "keep": [
+    "core",
+    "automated-browser-solutions",
+    "deploy-orchestrator",
+    "domain-dns-configurator",
+    "domain-name-generator",
+    "domain-registrar-advisor",
+    "marketing-site-skill",
+    "server-provisioner",
+    "shared",
+    "ssl-and-security-hardener",
+    "web-security-architect",
+    "webapp-ui-skill",
+    "webmaster-registrar"
+  ]
+}
