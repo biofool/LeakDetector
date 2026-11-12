@@ -1,0 +1,7 @@
+ID|STAGE|LANE|ACT|SRC|DST|SYMBOLS|DEPS|NOTE
+R0|1|tests|T|backend/tests/volunteers.test.ts|backend/tests/volunteers.test.ts.split|-|-|-characterization tests before split
+R1|2|src|S|backend/src/routes/volunteers.ts|backend/src/routes/volunteers.ts.split|-|-|-split by responsibility into modules <=250
+R2|2|src|S|backend/src/routes/reports.ts|backend/src/routes/reports.ts.split|-|-|-split by responsibility into modules <=250
+V3|0|-|-|scripts/scan_secrets.py|-|-|-|SKIP vendored/shared — fix upstream (canonical copy)
+R4|2|src|S|frontend/src/pages/DashboardPage.tsx|frontend/src/pages/DashboardPage.tsx.split|-|-|-split by responsibility into modules <=250
+R5|1|data|M|frontend/src/i18n/messages.ts|frontend/src/i18n/messages.ts.split|-|-|-move data to JSON per data-over-hardcoding rule
