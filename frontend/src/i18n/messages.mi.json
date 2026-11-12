@@ -1,0 +1,234 @@
+{
+  "onboarding": {
+    "welcome": {
+      "title": "Nau mai ki Wai Action",
+      "subtitle": "He taputapu hei tiaki i ngā wai o Aotearoa.",
+      "body": "Mā te whakamahi wai kia iti iho, mā te karo i ngā matū ki ngā rere, mā te whai wāhi ki ngā whakatau, ka pakari ake te hauora o te wai, o te tāngata.",
+      "button": "Tīmata"
+    },
+    "why": {
+      "title": "Te take o tēnei app",
+      "body": "Kei te pēhia ngā pūnaha wai o Aotearoa – he pūnaha tawhito, he taupori e tipu ana, he huringa āhuarangi, he iti ngā pūtea. Ka pā ēnei ki te haumaru o te wai inu, ki te wai paruparu, ki te wai ā-āwhina e rere ana ki ō tātou awa, moana.",
+      "button": "Kia haere tonu"
+    },
+    "principles": {
+      "title": "Ngā mātāpono",
+      "bullets": [
+        {"lead": "Te Tiriti o Waitangi:", "rest": "He taonga te wai; me whai wāhi mai ngā iwi, ngā hapū ki ngā whakatau."},
+        {"lead": "Kaitiakitanga:", "rest": "Tiakina te mauri o te wai mō āpōpō."},
+        {"lead": "Manaakitanga:", "rest": "Hāpai i te mana o te tangata; whakauru i ngā ahurea katoa."}
+      ],
+      "button": "Kia haere tonu"
+    },
+    "done": "Tīmata i tēnei rā",
+    "skip": "Tīkape"
+  },
+  "actions": {
+    "title": "Ngā mahi wai",
+    "intro": "Kōwhiria tētahi mahi iti e toru: tētahi mō te whakamahi wai, tētahi mō ngā matū, tētahi mō te whai wāhi. Ka huihuia ēnei mahi iti e te hapori, ka nui te hua mō te wai, mō te tāngata.",
+    "modules": [
+      {
+        "title": "Whakamahia te wai kia iti iho",
+        "subtitle": "Ngā huarahi māmā hei whakaheke i tō whakamahi wai.",
+        "body": "Mā te whakaiti i te whakamahi wai ka māmā ake te pēhanga ki ngā pūnaha wai inu, wai paruparu hoki.",
+        "cards": [
+          {"lead": "Whakapoto i ngā kaukau", "rest": "Whāia te 4 meneti, iti iho rānei."},
+          {"lead": "Kati te rīki", "rest": "I te wā o te horoi niho, te kanikani rānei."},
+          {"lead": "Whakakīa", "rest": "He ōrite te ~13 L mō te kī me te haurua — ka kore utu ngā rihi tāpiri."},
+          {"lead": "Whakatikatika i ngā rīki", "rest": "He rīki e rere ana? Whakatikatika wawe."},
+          {"lead": "Upoko kaukau e whakaheke ana i te rere", "rest": "Tāutahia he upoko hou."}
+        ],
+        "cta": "Tīmata i tētahi mahi"
+      },
+      {
+        "title": "Kaua e tukuna ngā matū ki ngā wai",
+        "subtitle": "Ko te ua anake ki ngā rere.",
+        "body": "He nui ngā wā, kāore e tātaritia te wai ā-āwhina; ko ngā mea ka horoia ki ngā rori, ki ngā ngongo, ka tae tika ki ngā awa.",
+        "cards": [
+          {"lead": "Kaua e horoia ngā matū", "rest": "Kaua e tukuna ngā tae, hinu, matū ki ngā rere."},
+          {"lead": "Horoia te waka ki runga pātītī", "rest": "Kaua ki runga sima e rere ana."},
+          {"lead": "Harau, kaua e horoia", "rest": "Ngā ara, ngā taraiwa."},
+          {"lead": "Kaua e flushia ngā wīpai", "rest": "Me ngā panana, taonga wahine."},
+          {"lead": "Kaua e ringi hinu ki te ngongo", "rest": "Tukuna kia mātao, kātahi ka maka."}
+        ],
+        "cta": "Tīmata i tētahi mahi"
+      },
+      {
+        "title": "Whai wāhi ki ngā whakatau mō te wai",
+        "subtitle": "Tō reo, tō pānga.",
+        "body": "Ka taea e koe te whai pānga ki ngā whakatau a te kaunihera, a te hapori mō te wai – mā ngā whakaaro, mā ngā hui, mā ngā kaupapa tiaki awa.",
+        "cards": [
+          {"lead": "Tukuna he whakaaro", "rest": "Ki ngā Mahere Roa, ki ngā rautaki wai."},
+          {"lead": "Haere ki tētahi hui", "rest": "Mō te wai, mō ngā awa, mō ngā rere."},
+          {"lead": "Mahi tahi ki tētahi rōpū", "rest": "Tiaki awa, whakatipu rākau, whakatipu repo."},
+          {"lead": "Mātaki i tō kounga wai", "rest": "LAWA, paetukutuku a te kaunihera."}
+        ],
+        "cta": "Whakamahi hei kaiāwhina",
+        "ctaTo": "/volunteer"
+      }
+    ]
+  },
+  "settings": {
+    "title": "Tautuhinga",
+    "language": {"label": "Reo", "options": {"mi": "Te reo Māori", "en": "English"}},
+    "location": {"label": "Tō tūwāhi", "helper": "Kia tika ai ngā mōhiohio mō tō rohe (kaunihera, awa, kaupapa)."},
+    "notifications": {
+      "title": "Ngā panonitanga",
+      "options": ["Whakamaumahara mō ngā mahi wai", "Ngā hui me ngā wānanga a-rohe", "Ngā mōhiohio haumaru wai inu (pēnei i ngā pānui whakapupū)"]
+    }
+  },
+  "nav": {"report": "Pūrongo i tētahi rīki", "map": "Mapi", "actions": "Ngā mahi wai", "settings": "Tautuhinga", "volunteer": "Kaiāwhina"},
+  "labels": {
+    "location": {
+      "footpath": "Ara hīkoi",
+      "berm": "Pātītī tapa rori (berm)",
+      "road": "Rori",
+      "water_meter": "Mīta wai / toby",
+      "outside_tap": "Rīki wāwaho",
+      "other_public": "Wāhi tūmatanui kē atu"
+    },
+    "status": {
+      "received": "Kua tae mai",
+      "investigating": "Kei te tūhuratia",
+      "contractor_assigned": "Kua tohua he kaitukumahi",
+      "resolved": "Kua whakatikatika",
+      "closed_private": "Whenua tūmataiti"
+    },
+    "sla": {
+      "on_track": "Kei te haere pai",
+      "due_soon": "Me oti wawe",
+      "breached": "Kua hipa te wā",
+      "met": "I oti i te wā",
+      "missed": "I takaroa",
+      "n/a": "—"
+    },
+    "severity": {"major": "Nui", "minor": "Iti"},
+    "severityHelp": {
+      "major": "E pupū ana, e pīkari ana rānei; e rere ana puta noa i te rori, i te ara hīkoi rānei; e waipuke ana i te whenua; he rua, he tōngo rānei i te rori; kua ngaro te pēhanga wai.",
+      "minor": "He rere iti; he pātītī mākū, poipoi rānei; he wai e tū ana; he mīta, he rīki rānei e tūheke ana."
+    }
+  },
+  "time": {
+    "justNow": "nāianei tonu",
+    "minutesAgo": {"tpl": "{n} meneti ki mua"},
+    "hoursAgo": {"tpl": "{n} hāora ki mua"},
+    "daysAgo": {"tpl": "{n} rā ki mua"}
+  },
+  "common": {
+    "loading": "E tāuta ana…",
+    "reported": "i pūrongohia",
+    "verifiedByCouncil": "Kua whakaūngia e te kaunihera",
+    "seenByOthers": {"tpl": "Kua kitea e {n} atu"},
+    "councilUpdate": "Whakahōu a te kaunihera:",
+    "slaDue": "Me oti i mua i te",
+    "backToMap": "← Mapi"
+  },
+  "reportPage": {
+    "title": "Pūrongo i tētahi rīki wai",
+    "subtitle": "Kua kitea e koe he rīki i te wāhi tūmatanui? Whakamōhiotia te kaunihera i roto i te 30 hēkona.",
+    "privateNote": "He rīki i runga i tō ake whenua? Ko te mahi a te kaikainga tērā — waea atu ki tētahi kaimahi wai (plumber).",
+    "actionsTitle": "Ētahi atu huarahi tiaki wai",
+    "actionsBody": "Whakamahia te wai kia iti iho, kaua e tukuna ngā matū ki ngā rere, whai wāhi ki ngā whakatau.",
+    "actionsLink": "Tirohia ngā mahi wai",
+    "introLink": "Mō tēnei app"
+  },
+  "form": {
+    "step1Title": "1. Kei hea te rīki?",
+    "step1Help": "Pāwhiritia te mapi hei whakatakoto pine, kātahi ka tō kia tika te wāhi.",
+    "checking": "E tirotiro ana i ngā pūrongo tata…",
+    "confirmSpot": "Whakaūngia tēnei wāhi",
+    "dropPin": "Pāwhiritia te mapi hei whakatakoto pine",
+    "step2Title": "2. Kei hea te wai?",
+    "step3Title": "3. He pēhea te kaha?",
+    "step4Title": "4. Ngā taipitopito",
+    "descPlaceholder": "hei tauira: he wai e pī ana puta i te pātītī, e rere ana i te tahataha",
+    "photosLabel": "Ngā whakaahua (kia 3 rawa — hei āwhina i te kaimahi ki te kimi)",
+    "namePlaceholder": "Ingoa (kōwhiringa)",
+    "contactPlaceholder": "Īmēra, waea pūkoro rānei (kōwhiringa — mō ngā whakahōu)",
+    "sending": "E tuku ana…",
+    "send": "Tukuna te pūrongo",
+    "submitError": "Kāore i taea te tuku — ngānobarua",
+    "dupTitle": "Koia tēnei te rīki e pūrongo ana koe?",
+    "dupHelp": "I pūrongohia ēnei i konei tata. Pāwhiritia tētahi mēnā ko te rīki kotahi — kua mōhio kē te kaunihera.",
+    "metresAway": "m te tawhiti",
+    "seenBy": {"tpl": "kua kitea e {n} atu"},
+    "fixedAgain": "I whakatikahia i nā tata — kei te rīki anō?",
+    "leakingAgain": "Kei te rīki anō — pūrongo i a ia",
+    "yesThatsIt": "Āe, koia tēnā",
+    "different": "Kāo, he rerekē tāku — haere tonu",
+    "alreadyKnown": "Ngā mihi — kua mōhio kē te kaunihera.",
+    "trackThatReport": "Aroturuki i taua pūrongo →",
+    "sent": "Kua tukuna te pūrongo",
+    "routedTo": {"tpl": "Kua whakawhiti ki {council} ({zone})."},
+    "trackYours": "Aroturuki i tō pūrongo →",
+    "similarNearby": {"tpl": "Kia mōhio: {n} pūrongo tuārite e tuwhera ana i konei tata — ka honoa e ngā kaimahi mēnā ko te rīki kotahi."}
+  },
+  "mapPage": {"title": "Mapi rīki", "all": "Katoa", "dropOff": "Ka ngaro ngā rīki kua whakatikahia i te mapi i muri i te 7 rā."},
+  "statusPage": {
+    "iveSeenToo": "Kua kitea e au anō tēnei rīki",
+    "confirmError": "Kāore i taea te hopu — ngānobarua",
+    "thanks": "Ngā mihi — kua hopukina.",
+    "openTracking": "Kua kitea e koe anō tēnei rīki? Whakatuwhera te whārangi aroturuki",
+    "notFound": "Kāore i kitea te pūrongo",
+    "notFoundBody": "Kāore tēnei pūrongo i te tīariari, kua tangohia rānei.",
+    "viewMap": "← Tirohia te mapi",
+    "statusHeading": "Tūnga",
+    "contactHeading": "He ohotata? Whakapā tōtika atu ki te kaunihera",
+    "servicedBy": {"tpl": "Ratonga wai: {name}"},
+    "callNow": "Waea",
+    "reportOnline": "Pūronga tuihono →",
+    "textCouncil": {"tpl": "Karakara ki {num}"},
+    "appNote": {"tpl": "pūronga rānei i roto i te taupānga {app}"}
+  },
+  "staff": {
+    "signIn": "Takiuru kaimahi",
+    "emailPlaceholder": "ingoa@kaunihera.govt.nz",
+    "password": "Kupu huna",
+    "signInButton": "Takiuru",
+    "loginFailed": "i rahua te takiuru",
+    "dashboard": "Papatohu mahi",
+    "refreshNote": "ka whakahōu ia 30 hēkona",
+    "signOut": "Takiputa",
+    "filterOpen": "Tuwhera",
+    "filterDueSoon": "Me oti wawe",
+    "filterBreached": "Kua hipa te wā",
+    "filterAll": "Katoa",
+    "refreshFailed": "I rahua te whakahōu — ka ngana anō i roto i te 30 hēkona",
+    "confirmations": {"tpl": "+{n} whakaū"},
+    "possibleDuplicate": "Tāreia pea he tuārite",
+    "verified": "kua whakaūngia",
+    "publicPage": "whārangi tūmatanui →",
+    "reporter": "Kaipūrongo:",
+    "hide": "hunaia",
+    "unverify": "Whakakore whakaū",
+    "verify": "Whakaū",
+    "notePlaceholder": "Kōrero tūmatanui (hei tauira: kua waihanga te kaimahi mō te Rāpare)",
+    "post": "Tuku",
+    "dupPlaceholder": "He tuārite mō te pūrongo id (hei tauira: 1042)",
+    "markDuplicate": "Tautohu tuārite",
+    "noReports": "Kāore he pūrongo.",
+    "volunteersTitle": "Ngā kaiāwhina i tō kaunihera",
+    "volunteersNone": "Kāore anō he kaiāwhina kua rēhita.",
+    "volunteerInactive": "kua mutu"
+  },
+  "volunteerPage": {
+    "title": "Whakamahi hei kaiāwhina",
+    "subtitle": "Hono mai ki te rōpū a-rohe — ka taea e koe te īmēra ina pūrongohia he rīki i tō rohe.",
+    "body": "E rua ngā huarahi āwhina: ka taea e te kaiāwhina ringa te whai wāhi ki te whakatikatika; mā te kaiāwhina whakawhiti te pūrongo e tae ki te wāhi tika.",
+    "nameLabel": "Tō ingoa",
+    "emailLabel": "Īmēra",
+    "zoneLabel": "Tō rohe",
+    "zonePlaceholder": "Kōwhiria tō rohe kaunihera…",
+    "helpLabel": "Me pēhea tō āwhina?",
+    "helpTypes": {"hands_on": "Ringa — āwhina i te whakatikatika ake", "routing": "Whakawhiti — āwhina i ngā pūrongo kia tae ki te wāhi tika"},
+    "noteLabel": "Pūkenga / kōrero (kōwhiringa)",
+    "notePlaceholder": "hei tauira: kaimahi wai (plumber), rōpū tiaki awa, e mōhio ana ki te tukanga kaunihera",
+    "consentLabel": "E whakaae ana au ka tukuna aku taipitopito whakapā ki ngā kaimahi kaunihera anake — kāore e whakaaturia ki te tūmatanui.",
+    "submit": "Rēhitatia au",
+    "sending": "E rēhita ana…",
+    "doneTitle": "Kei te rārangi koe",
+    "doneBody": {"tpl": "Ngā mihi — ka tukuna he īmēra ki a koe ina pūrongohia he rīki i {zone}. Kei ia īmēra tētahi hononga whakamutu."},
+    "submitError": "Kāore i taea te rēhita — ngānobarua",
+    "zonesFailed": "Kāore i taea te tiki i ngā rohe kaunihera — tirohia tō hononga, kātahi ka whakahōu."
+  }
+}
