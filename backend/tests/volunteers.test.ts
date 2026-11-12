@@ -1,14 +1,13 @@
 // backend/tests/volunteers.test.ts — volunteer signup, verify, unsubscribe,
-// staff list (#37, #50, #51).
+// staff list (#37, #50, #51). Shared app/helpers live in
+// volunteerHelpers.ts; the DB-independent describes moved to
+// volunteers_access.test.ts (issue #68). The describes below run in file
+// order — later ones rely on volunteers created+verified by earlier ones.
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
-import { createApp } from '../src/app.js';
-import { pool } from '../src/db.js';
+import { app, pool, WLG, signup, tokenFor, verifyViaPost } from './volunteerHelpers.js';
 
-const app = createApp();
 afterAll(() => pool.end());
-
-const WLG = { lat: -41.2924, lng: 174.7768 };
 
 let zoneId: number;
 let staffToken: string;
@@ -20,28 +19,6 @@ beforeAll(async () => {
     .post('/api/v1/auth/login')
     .send({ email: 'staff@example.govt.nz', password: 'password123' });
   staffToken = login.body.token;
-});
-
-const signup = (body: Record<string, unknown>) =>
-  request(app).post('/api/v1/volunteers').send(body);
-
-const tokenFor = async (email: string): Promise<string> => {
-  const { rows } = await pool.query(
-    `SELECT unsubscribe_token FROM volunteers WHERE lower(email) = lower($1)`, [email]);
-  return rows[0].unsubscribe_token;
-};
-
-const verifyViaPost = (token: string) =>
-  request(app).post('/api/v1/volunteers/verify').type('form').send({ token });
-
-describe('GET /api/v1/councils', () => {
-  it('lists councils + zones, id/name only', async () => {
-    const res = await request(app).get('/api/v1/councils');
-    expect(res.status).toBe(200);
-    const demo = res.body.results.find((c: { name: string }) => c.name === 'Demo City Council');
-    expect(demo.zones.map((z: { name: string }) => z.name)).toContain('Citywide');
-    expect(demo.alert_emails).toBeUndefined();
-  });
 });
 
 describe('POST /api/v1/volunteers', () => {
@@ -164,30 +141,6 @@ describe('GET /api/v1/volunteers (staff only)', () => {
     expect(rangi.help_types).toEqual(['routing']);
     expect(rangi.verified).toBe(true);
     expect(rangi.council_zone.council).toBe('Demo City Council');
-  });
-
-  it('rejects a token whose account was deactivated after issue (#53)', async () => {
-    await pool.query(
-      `INSERT INTO users (email, password_hash, display_name, role, council_id)
-       SELECT 'gone@example.govt.nz', password_hash, 'Gone Staff', 'council_staff', council_id
-       FROM users WHERE lower(email) = 'staff@example.govt.nz'`,
-    );
-    const login = await request(app)
-      .post('/api/v1/auth/login')
-      .send({ email: 'gone@example.govt.nz', password: 'password123' });
-    expect(login.status).toBe(200);
-    const ok = await request(app)
-      .get('/api/v1/volunteers')
-      .set('Authorization', `Bearer ${login.body.token}`);
-    expect(ok.status).toBe(200);
-
-    await pool.query(`UPDATE users SET is_active = false WHERE email = 'gone@example.govt.nz'`);
-    const res = await request(app)
-      .get('/api/v1/volunteers')
-      .set('Authorization', `Bearer ${login.body.token}`);
-    expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('invalid_token');
-    await pool.query(`DELETE FROM users WHERE email = 'gone@example.govt.nz'`);
   });
 });
 

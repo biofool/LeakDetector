@@ -1,0 +1,222 @@
+{
+  "onboarding": {
+    "welcome": {
+      "title": "Welcome to Wai Action",
+      "subtitle": "A tool to care for Aotearoa’s waters.",
+      "body": "By using less water, keeping pollutants out of drains, and having a say in decisions, we can improve the health of our water and our people.",
+      "button": "Get started"
+    },
+    "why": {
+      "title": "Why this app exists",
+      "body": "Aotearoa’s water systems are under pressure from ageing infrastructure, population growth, climate change and funding gaps. These affect drinking water safety, wastewater and stormwater that flows into our rivers and seas.",
+      "button": "Continue"
+    },
+    "principles": {
+      "title": "Guiding principles",
+      "bullets": [
+        {"lead": "Te Tiriti o Waitangi:", "rest": "Water is a taonga; iwi and hapū must have meaningful input into decisions."},
+        {"lead": "Kaitiakitanga:", "rest": "Protect the life force of water for future generations."},
+        {"lead": "Manaakitanga:", "rest": "Uphold people’s mana and include all cultures."}
+      ],
+      "button": "Continue"
+    },
+    "done": "Start today",
+    "skip": "Skip"
+  },
+  "actions": {
+    "title": "Wai actions",
+    "intro": "Pick three small actions: one for water use, one for pollutants, one for participation. Together, these small steps add up to big change for our water and our people.",
+    "modules": [
+      {
+        "title": "Use less water",
+        "subtitle": "Simple ways to reduce your water use.",
+        "body": "Reducing household water use eases pressure on treatment plants and pipes.",
+        "cards": [
+          {"lead": "Shorten showers", "rest": "Aim for 4 minutes or less."},
+          {"lead": "Turn off the tap", "rest": "While brushing teeth or shaving."},
+          {"lead": "Fill it up", "rest": "A full load uses the same ~13 L as a half one. The extra dishes ride free."},
+          {"lead": "Fix leaks", "rest": "A dripping tap? Repair it promptly."},
+          {"lead": "Low-flow showerhead", "rest": "Install a water-efficient head."}
+        ],
+        "cta": "Start an action"
+      },
+      {
+        "title": "Keep pollutants out",
+        "subtitle": "Drains only for rain.",
+        "body": "Most stormwater is untreated before reaching streams and harbours.",
+        "cards": [
+          {"lead": "Don’t hose chemicals", "rest": "No paint, oil or cleaners to stormwater."},
+          {"lead": "Wash cars on grass", "rest": "Not on concrete that drains to streams."},
+          {"lead": "Sweep, don’t hose", "rest": "Driveways and paths."},
+          {"lead": "Don’t flush wipes", "rest": "Or nappies and sanitary products."},
+          {"lead": "No fats/oils down the sink", "rest": "Cool and bin them."}
+        ],
+        "cta": "Start an action"
+      },
+      {
+        "title": "Get involved",
+        "subtitle": "Your voice, your impact.",
+        "body": "You can influence council and community decisions about water through submissions, meetings and local projects.",
+        "cards": [
+          {"lead": "Make a submission", "rest": "On Long-Term Plans and water strategies."},
+          {"lead": "Attend a meeting", "rest": "About water, rivers or stormwater."},
+          {"lead": "Join a local group", "rest": "Stream care, planting, wetlands."},
+          {"lead": "Check your water quality", "rest": "LAWA and council websites."}
+        ],
+        "cta": "Volunteer to help",
+        "ctaTo": "/volunteer"
+      }
+    ]
+  },
+  "settings": {
+    "title": "Settings",
+    "language": {"label": "Language", "options": {"mi": "Te reo Māori", "en": "English"}},
+    "location": {"label": "Your location", "helper": "So we can show relevant info for your area (council, rivers, projects)."},
+    "notifications": {
+      "title": "Notifications",
+      "options": ["Water action reminders", "Local meetings and workshops", "Drinking water safety alerts (e.g. boil-water notices)"]
+    }
+  },
+  "nav": {"report": "Report a leak", "map": "Map", "actions": "Wai actions", "settings": "Settings", "volunteer": "Volunteer"},
+  "labels": {
+    "location": {
+      "footpath": "Footpath",
+      "berm": "Berm / verge",
+      "road": "Road",
+      "water_meter": "Water meter / toby",
+      "outside_tap": "Outside tap",
+      "other_public": "Other public place"
+    },
+    "status": {
+      "received": "Received",
+      "investigating": "Investigating",
+      "contractor_assigned": "Contractor assigned",
+      "resolved": "Fixed",
+      "closed_private": "Private property"
+    },
+    "sla": {"on_track": "On track", "due_soon": "Due soon", "breached": "Overdue", "met": "Fixed in time", "missed": "Fixed late", "n/a": "—"},
+    "severity": {"major": "Major", "minor": "Minor"},
+    "severityHelp": {
+      "major": "Gushing or spraying; flowing across road or footpath; flooding property; a hole or sinking in the road; loss of pressure.",
+      "minor": "A steady trickle; damp or boggy berm; pooling water; a dripping meter or tap."
+    }
+  },
+  "time": {"justNow": "just now", "minutesAgo": {"tpl": "{n} min ago"}, "hoursAgo": {"tpl": "{n} hour{s} ago"}, "daysAgo": {"tpl": "{n} day{s} ago"}},
+  "common": {
+    "loading": "Loading…",
+    "reported": "reported",
+    "verifiedByCouncil": "Verified by council",
+    "seenByOthers": {"tpl": "Seen by {n} other{s}"},
+    "councilUpdate": "Council update:",
+    "slaDue": "SLA due",
+    "backToMap": "← Map"
+  },
+  "reportPage": {
+    "title": "Report a water leak",
+    "subtitle": "Spotted a leak on public land? Tell the council in 30 seconds.",
+    "privateNote": "Leak on your own property? That’s the owner’s job — call a plumber.",
+    "actionsTitle": "Other ways to care for wai",
+    "actionsBody": "Use less water, keep pollutants out of drains, have your say in decisions.",
+    "actionsLink": "See Wai actions",
+    "introLink": "About this app"
+  },
+  "form": {
+    "step1Title": "1. Where is the leak?",
+    "step1Help": "Tap the map to drop a pin, then drag it to the exact spot.",
+    "checking": "Checking nearby reports…",
+    "confirmSpot": "Confirm this spot",
+    "dropPin": "Tap the map to drop a pin",
+    "step2Title": "2. Where is the water?",
+    "step3Title": "3. How bad is it?",
+    "step4Title": "4. Details",
+    "descPlaceholder": "e.g. water bubbling up through the berm, running down the gutter",
+    "photosLabel": "Photos (up to 3 — helps the crew find it)",
+    "namePlaceholder": "Name (optional)",
+    "contactPlaceholder": "Email or mobile (optional — for updates)",
+    "sending": "Sending…",
+    "send": "Send report",
+    "submitError": "Could not submit — please try again",
+    "dupTitle": "Is this the leak you’re reporting?",
+    "dupHelp": "These were reported nearby. Tap one if it’s the same leak — the council already knows.",
+    "metresAway": "m away",
+    "seenBy": {"tpl": "seen by {n} other{s}"},
+    "fixedAgain": "Fixed recently — is it leaking again?",
+    "leakingAgain": "It’s leaking again — report it",
+    "yesThatsIt": "Yes, that’s it",
+    "different": "No, mine’s different — continue",
+    "alreadyKnown": "Thanks — the council already knows.",
+    "trackThatReport": "Track that report →",
+    "sent": "Report sent",
+    "routedTo": {"tpl": "Routed to {council} ({zone})."},
+    "trackYours": "Track your report →",
+    "similarNearby": {"tpl": "Note: {n} similar open report{s} nearby — staff will link them if it’s the same leak."}
+  },
+  "mapPage": {"title": "Leak map", "all": "All", "dropOff": "Fixed leaks drop off the map after 7 days."},
+  "statusPage": {
+    "iveSeenToo": "I’ve seen this leak too",
+    "confirmError": "Could not record that — try again",
+    "thanks": "Thanks — noted.",
+    "openTracking": "Seen this leak too? Open the tracking page",
+    "notFound": "Report not found",
+    "notFoundBody": "This report does not exist or may have been removed.",
+    "viewMap": "← View the map",
+    "statusHeading": "Status",
+    "contactHeading": "Urgent? Contact the council directly",
+    "servicedBy": {"tpl": "Water services: {name}"},
+    "callNow": "Call",
+    "reportOnline": "Report online →",
+    "textCouncil": {"tpl": "Text it to {num}"},
+    "appNote": {"tpl": "or report it in the {app} app"}
+  },
+  "staff": {
+    "signIn": "Staff sign in",
+    "emailPlaceholder": "name@council.govt.nz",
+    "password": "Password",
+    "signInButton": "Sign in",
+    "loginFailed": "login failed",
+    "dashboard": "Duty dashboard",
+    "refreshNote": "refreshes every 30 s",
+    "signOut": "Sign out",
+    "filterOpen": "Open",
+    "filterDueSoon": "Due soon",
+    "filterBreached": "Overdue",
+    "filterAll": "All",
+    "refreshFailed": "Refresh failed — will retry in 30 s",
+    "confirmations": {"tpl": "+{n} confirmations"},
+    "possibleDuplicate": "Possible duplicate",
+    "verified": "verified",
+    "publicPage": "public page →",
+    "reporter": "Reporter:",
+    "hide": "hide",
+    "unverify": "Unverify",
+    "verify": "Verify",
+    "notePlaceholder": "Public note (e.g. crew booked Thursday)",
+    "post": "Post",
+    "dupPlaceholder": "Duplicate of report id (e.g. 1042)",
+    "markDuplicate": "Mark duplicate",
+    "noReports": "No reports.",
+    "volunteersTitle": "Volunteers in your council",
+    "volunteersNone": "No volunteers registered yet.",
+    "volunteerInactive": "unsubscribed"
+  },
+  "volunteerPage": {
+    "title": "Volunteer to help",
+    "subtitle": "Join the local crew — get an email when a leak is reported in your area.",
+    "body": "Two ways to help: hands-on locals can pitch in on the fix; routing helpers know which council, entity or channel a report should reach.",
+    "nameLabel": "Your name",
+    "emailLabel": "Email",
+    "zoneLabel": "Your area",
+    "zonePlaceholder": "Pick your council zone…",
+    "helpLabel": "How can you help?",
+    "helpTypes": {"hands_on": "Hands-on — help with the actual fix", "routing": "Routing — help reports reach the right place"},
+    "noteLabel": "Skills / notes (optional)",
+    "notePlaceholder": "e.g. plumber, stream-care group, know the council process",
+    "consentLabel": "I agree my contact details are shared with council staff only — they are never shown publicly.",
+    "submit": "Sign me up",
+    "sending": "Signing up…",
+    "doneTitle": "You’re on the list",
+    "doneBody": {"tpl": "Thanks — we’ll email you when a leak is reported in {zone}. Every email includes an unsubscribe link."},
+    "submitError": "Could not sign you up — please try again",
+    "zonesFailed": "Could not load council areas — check your connection and reload."
+  }
+}
