@@ -62,10 +62,10 @@ done
 
 docker run --rm --network leaknet --env-file /opt/leakdetector/leakdetector.env \
   leakdetector-api node dist/src/migrate.js
-# SEED_DEMO=0: prod never (re)creates the demo zone or the default-password
-# demo login (#31). Existing rows are left alone.
+# The seed only creates demo rows with SEED_DEMO=1 (unset here), so prod
+# never (re)creates the demo zone or the default-password login (#31).
 docker run --rm --network leaknet --env-file /opt/leakdetector/leakdetector.env \
-  -e SEED_DEMO=0 leakdetector-api node dist/scripts/seed.js
+  leakdetector-api node dist/scripts/seed.js
 
 docker rm -f leakdetector-api leakdetector-worker 2>/dev/null || true
 docker run -d --name leakdetector-api --network leaknet --restart always \
