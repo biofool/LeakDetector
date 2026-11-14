@@ -47,10 +47,10 @@ This starts PostGIS on port `5433` and MinIO on ports `9000` and `9001`. MinIO p
 4. Apply migrations and load development data.
 
 ```bash
-cd backend && npm run migrate && npm run seed
+cd backend && npm run migrate && SEED_DEMO=1 npm run seed
 ```
 
-The seed creates a demonstration council, zone, and staff account. Use the seed credentials only in local development.
+The seed creates a demonstration council, zone, and staff account only when `SEED_DEMO=1` is set. Use the seed credentials only in local development.
 
 5. Start the API, worker, and frontend in three terminals.
 
@@ -86,7 +86,7 @@ Run commands from the listed package directory.
 | `backend/` | `npm run dev` | Run the API with file watching |
 | `backend/` | `npm run worker` | Send queued notifications and check deadlines |
 | `backend/` | `npm run migrate` | Apply SQL migrations |
-| `backend/` | `npm run seed` | Load demonstration data |
+| `backend/` | `SEED_DEMO=1 npm run seed` | Load demonstration data |
 | `backend/` | `npm run zones` | Import New Zealand territorial authority boundaries |
 | `backend/` | `npm run contacts` | Import council contact data |
 | `backend/` | `npm run build` | Compile TypeScript into `dist/` |

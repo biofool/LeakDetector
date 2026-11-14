@@ -15,7 +15,8 @@
 # report_photos, report_status_history, notification_outbox; is_duplicate_of
 # self-refs SET NULL) → NULL report_status_history.changed_by for demo users →
 # demo users (platform_admin rows are kept, only detached) → zones → council.
-# Deploys cannot recreate the rows: remote-setup.sh seeds with SEED_DEMO=0.
+# Deploys cannot recreate the rows: seed.ts only writes demo rows with
+# SEED_DEMO=1, which no deploy path sets.
 # Photo storage keys of deleted reports go to the audit for separate cleanup.
 # Audit JSON → data/audit/retire-demo-zone-<ts>.json.
 set -euo pipefail
