@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# starter-script-version: 2026.11.22 — canonical copy lives in biofool/starter/scripts/; sync, never edit vendored copies.
+# starter-script-version: 2026.11.22b — canonical copy lives in biofool/starter/scripts/; sync, never edit vendored copies.
 # audit-deps.sh — dependency vulnerability audit across committed lockfiles.
 #
 # Shared auditor for the SCA deploy-gating pattern (see AGENTS.md,
@@ -197,8 +197,10 @@ for lock in **/uv.lock; do
   found=1
   if have uv && have pip-audit; then
     tmp=$(mktemp)
+    # uv export includes "-e ." for the project itself — unhashable, not a
+    # package-index dep; drop it before the audit.
     (cd "$(dirname "$lock")" && uv export --format requirements-txt --locked --no-dev -o "$tmp") \
-      && pip-audit -r "$tmp" || status=1
+      && sed -i '/^\s*-e /d' "$tmp" && pip-audit -r "$tmp" || status=1
     rm -f "$tmp"
   else
     missing "uv+pip-audit" "$lock" "pipx install uv pip-audit"
@@ -380,109 +382,6 @@ PY
       echo "!! python3 unavailable — skipping lock consistency check for $req"
     fi
   done
-done
-
-for lock in **/uv.lock; do
-  case "$lock" in */.venv/*|data/audit/*|*/data/audit/*) continue ;; esac
-  section "pip-audit via uv export: $lock"
-  found=1
-  if have uv && have pip-audit; then
-    tmp=$(mktemp)
-    (cd "$(dirname "$lock")" && uv export --format requirements-txt --locked --no-dev -o "$tmp") \
-      && pip-audit -r "$tmp" || status=1
-    rm -f "$tmp"
-  else
-    missing "uv+pip-audit" "$lock" "pipx install uv pip-audit"
-  fi
-done
-
-for lock in **/poetry.lock; do
-  # requirements*.txt already cover the env — only warn when poetry.lock is
-  # the sole Python manifest in its directory.
-  dir=$(dirname "$lock")
-  compgen -G "$dir/requirements*.txt" >/dev/null && continue
-  [ -f "$dir/uv.lock" ] && continue
-  section "poetry.lock: $lock"
-  found=1
-  if have poetry && have pip-audit; then
-    tmp=$(mktemp)
-    (cd "$dir" && poetry export -f requirements.txt --without-hashes -o "$tmp") \
-      && pip-audit -r "$tmp" || status=1
-    rm -f "$tmp"
-  elif have osv-scanner; then
-    osv-scanner scan --lockfile="$lock" || status=1
-  else
-    missing "poetry|osv-scanner" "$lock" \
-      "pipx install poetry pip-audit, or install osv-scanner"
-  fi
-done
-
-# ---------- PHP ----------
-for lock in **/composer.lock; do
-  case "$lock" in */vendor/*|data/audit/*|*/data/audit/*) continue ;; esac
-  section "composer audit: $lock"
-  found=1
-  if have composer; then
-    (cd "$(dirname "$lock")" && composer audit) || status=1
-  else
-    missing composer "$lock" "install Composer 2.4+"
-  fi
-done
-
-# composer.json without a committed lockfile cannot be audited — flag it.
-for manifest in **/composer.json; do
-  case "$manifest" in */vendor/*|data/audit/*|*/data/audit/*) continue ;; esac
-  dir=$(dirname "$manifest")
-  [ -f "$dir/composer.lock" ] && continue
-  echo "!! AUDIT GAP: $manifest has no committed composer.lock — cannot audit."
-  echo "   Commit composer.lock (never gitignore it) or exclude dev-only tooling."
-  status=1
-  found=1
-done
-
-# ---------- Rust ----------
-for lock in **/Cargo.lock; do
-  section "cargo audit: $lock"
-  found=1
-  if have cargo-audit || have cargo; then
-    (cd "$(dirname "$lock")" && cargo audit) || status=1
-  else
-    missing cargo-audit "$lock" "cargo install cargo-audit"
-  fi
-done
-
-# ---------- Go ----------
-for mod in **/go.mod; do
-  case "$mod" in */vendor/*|data/audit/*|*/data/audit/*) continue ;; esac
-  section "govulncheck: $mod"
-  found=1
-  if have govulncheck; then
-    (cd "$(dirname "$mod")" && govulncheck ./...) || status=1
-  else
-    missing govulncheck "$mod" "go install golang.org/x/vuln/cmd/govulncheck@latest"
-  fi
-done
-
-# ---------- Ruby ----------
-for lock in **/Gemfile.lock; do
-  section "bundler-audit: $lock"
-  found=1
-  if have bundle-audit; then
-    (cd "$(dirname "$lock")" && bundle-audit check --update) || status=1
-  else
-    missing bundle-audit "$lock" "gem install bundler-audit"
-  fi
-done
-
-# ---------- Flutter/Dart ----------
-for lock in **/pubspec.lock; do
-  section "dart pub audit: $lock"
-  found=1
-  if have dart; then
-    (cd "$(dirname "$lock")" && dart pub audit) || status=1   # dart >=3.x
-  else
-    missing dart "$lock" "install Dart/Flutter SDK"
-  fi
 done
 
 # ---------- Other ecosystems ----------
