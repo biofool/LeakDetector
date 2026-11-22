@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# starter-script-version: 2026.11.22b — canonical copy lives in biofool/starter/scripts/; sync, never edit vendored copies.
+# starter-script-version: 2026.11.22c — canonical copy lives in biofool/starter/scripts/; sync, never edit vendored copies.
 # audit-deps.sh — dependency vulnerability audit across committed lockfiles.
 #
 # Shared auditor for the SCA deploy-gating pattern (see AGENTS.md,
@@ -215,16 +215,17 @@ for lock in **/poetry.lock; do
   [ -f "$dir/uv.lock" ] && continue
   section "poetry.lock: $lock"
   found=1
-  if have poetry && have pip-audit; then
+  # Poetry 2.x ships no `export` — it lives in poetry-plugin-export.
+  if have poetry && have pip-audit && poetry export --help >/dev/null 2>&1; then
     tmp=$(mktemp)
     (cd "$dir" && poetry export -f requirements.txt --without-hashes -o "$tmp") \
-      && pip-audit -r "$tmp" || status=1
+      && sed -i '/^\s*-e /d' "$tmp" && pip-audit -r "$tmp" || status=1
     rm -f "$tmp"
   elif have osv-scanner; then
     osv-scanner scan --lockfile="$lock" || status=1
   else
-    missing "poetry|osv-scanner" "$lock" \
-      "pipx install poetry pip-audit, or install osv-scanner"
+    missing "poetry+export-plugin|osv-scanner" "$lock" \
+      "poetry self add poetry-plugin-export, or install osv-scanner"
   fi
 done
 
