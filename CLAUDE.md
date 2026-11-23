@@ -57,8 +57,11 @@ edit one, edit both.
   check a conclusion, investigate and report only. Do not start editing code
   unless the user explicitly asks for a fix or implementation.
 - **Never read secrets files.** Do not read, cat, or print `.env`,
-  `.env.secrets`, `*.key`, `credentials*.json`, `service-account*.json`, or
-  any file containing API keys, tokens, or passwords. Ask the user to
+  `.env.secrets`, `*.key`, `credentials*.json`, `service-account*.json`,
+  `.dvc/config.local` (even to check `cache.dir` — use `dvc cache dir`),
+  DVC `credentialpath` files, `~/.aws/credentials`,
+  `~/.config/rclone/rclone.conf`, or any file containing API keys, tokens,
+  or passwords. Ask the user to
   provide credentials directly or via environment variables.
 - **Never commit or log secrets.** Keep `.gitignore` entries for `.env`,
   `*.key`, `*.pem`, `credentials.json`, `cookies.txt`. Treat

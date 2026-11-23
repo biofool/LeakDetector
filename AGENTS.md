@@ -23,10 +23,21 @@ when the user explicitly asks for a fix or implementation.
 ## Never read secrets files
 
 NEVER read, cat, print, or otherwise access `.env`, `.env.secrets`,
-`.env.local`, `*.key`, `credentials*.json`, `service-account*.json`, or any
-file containing API keys, tokens, or passwords. If you need a credential
-value to complete a task, ask the user to provide it directly or set it as an
-environment variable. Do not attempt to discover secrets by reading files.
+`.env.local`, `*.key`, `credentials*.json`, `service-account*.json`,
+`.dvc/config.local`, DVC `credentialpath` files (e.g.
+`~/.config/dvc/*.credentials`), `~/.aws/credentials`,
+`~/.config/rclone/rclone.conf`, or any file containing API keys, tokens, or
+passwords. If you need a credential value to complete a task, ask the user to
+provide it directly or set it as an environment variable. Do not attempt to
+discover secrets by reading files.
+
+`.dvc/config.local` also holds non-secret settings (`cache.dir`), and in a
+worktree it may be a symlink to the main checkout's file — so never `cat` it
+to check the cache. Use `dvc cache dir`, `dvc config --local <one.key>` for a
+non-secret key, or key names only:
+`dvc config --local --list | sed -E 's/=.*/=<redacted>/'`
+(biofool/story_graph#593: a `cat` of a worktree's symlinked
+config.local printed an R2 key pair into a session transcript).
 
 ### Never pull secret VALUES into your context — names and lengths only
 
