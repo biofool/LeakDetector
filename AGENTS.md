@@ -152,6 +152,27 @@ WARNING or ERROR level with a specific message. Silent `pass` or bare
 (e.g. an optional sync is disabled), log *why* it was disabled and surface
 the status to the UI, dashboard, or log file.
 
+## Waiting on a job — never `pgrep -f` / `ps | grep`
+
+`pgrep -f "<pattern>"` also matches the waiting shell, whose own command
+line holds the pattern, so the loop never ends (2026-11-22: a
+`while pgrep -f "pytest ..."` loop ran ~40 h and hung a second waiter).
+Use, in this order:
+
+1. The agent's own background-job notification (Claude Code:
+   `run_in_background: true`). Do not poll.
+2. A known PID: `cmd & pid=$!`, then `wait "$pid"` (same shell) or
+   `timeout 1800 tail --pid="$pid" -f /dev/null` (any shell).
+3. A job you did not start: find its PID once, confirm it with
+   `ps -p PID -o args=`, then wait on that PID.
+4. A done-marker the job writes (`cmd; echo $? > done.rc`). Never wait on
+   "output file is not empty".
+5. If a name match is unavoidable: `pgrep -x <process-name>` (name only,
+   not arguments).
+
+Every wait loop has a `timeout`. Put this rule in subagent prompts that
+run long jobs.
+
 ## No backslash line continuations in shell commands shown to the user
 
 Write commands on a single line — backslash continuations break copy-paste.

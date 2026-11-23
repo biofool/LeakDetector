@@ -68,6 +68,11 @@ edit one, edit both.
   official sources, distinguish per-call vs. subscription vs. tiered, compute
   break-even volume, separate marginal from total cost, account for free
   tiers, double-check arithmetic, state all assumptions.
+- **Waiting on a job — never `pgrep -f` / `ps | grep`.** The pattern
+  matches the waiting shell itself, so the loop never ends. Use the
+  `run_in_background` notification, or wait on a PID (`wait "$pid"`,
+  `timeout 1800 tail --pid="$pid" -f /dev/null`), or a done-marker file.
+  `pgrep -x <name>` only if a name match is unavoidable. Always a timeout.
 - **Don't trust, verify.** Post-edit lint hooks run automatically
   (`.claude/hooks/post_edit_lint.py` for Claude Code, `magic-compact-devin`
   plugin hook for Devin): ruff/py_compile, `php -l`, `node --check`,
